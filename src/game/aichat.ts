@@ -2,6 +2,7 @@ import type { Line } from "./output";
 import { dim, info, warn } from "./output";
 import type { Game } from "./engine";
 import { hatBand, hatLabel, styleRank, styleTitle } from "./engine";
+import { missionTitle } from "./missions";
 import type { Bilingual, Lang } from "./i18n";
 import { pick } from "./i18n";
 
@@ -167,6 +168,46 @@ async function askAI(flags: Record<string, unknown>, messages: { role: string; c
 // A compact, language-aware digest of the player's real situation, injected
 // into every chat turn so Noro-chan references actual stats instead of talking
 // in a vacuum.
+/**
+ * The exact commands to solve each active/offered mission, so Noro-chan can
+ * tell the player *what to type* instead of vague hints.
+ */
+export function missionGuide(g: Game, lang: Lang): string {
+  const active = g.missions.filter((m) => m.status === "active");
+  const offered = g.missions.filter((m) => m.status === "offered");
+  const parts: string[] = [];
+  if (offered.length) {
+    const ids = offered.map((m) => `missions accept ${m.id}`).join("  ·  ");
+    parts.push(lang === "fr" ? `Missions disponibles : ${ids}` : `Available missions: ${ids}`);
+  }
+  for (const m of active) {
+    const title = missionTitle(lang, m.template);
+    const steps = (() => {
+      try { return JSON.parse(m.steps) as string[]; } catch { return []; }
+    })();
+    const targetHacked = steps[0]?.startsWith("✔") || steps[0]?.startsWith("✓");
+    const dl = m.deadline_day ? (lang === "fr" ? ` · échéance jour ${m.deadline_day}` : ` · deadline day ${m.deadline_day}`) : "";
+    if (!targetHacked) {
+      parts.push(
+        lang === "fr"
+          ? `Mission active « ${title} » (id ${m.id}) : hacke « ${m.target} » avec  hack ${m.target}  puis choisis  hack brute ${m.target}  |  hack exploit ${m.target}  |  hack social ${m.target}  (si un événement se déclenche :  hack push  |  hack cover  |  hack abort ). Ensuite  missions deliver ${m.id} ${dl}`
+          : `Active mission "${title}" (id ${m.id}): hack "${m.target}" with  hack ${m.target}  then pick  hack brute ${m.target}  |  hack exploit ${m.target}  |  hack social ${m.target}  (if an event trips:  hack push  |  hack cover  |  hack abort ). Then  missions deliver ${m.id} ${dl}`
+      );
+    } else {
+      parts.push(
+        lang === "fr"
+          ? `Mission active « ${title} » (id ${m.id}) : la cible est déjà hackée — tape  missions deliver ${m.id} ${dl}`
+          : `Active mission "${title}" (id ${m.id}): target already hacked — type  missions deliver ${m.id} ${dl}`
+      );
+    }
+  }
+  if (!parts.length) return "";
+  const hdr = lang === "fr"
+    ? "[GUIDE DE MISSION — si le joueur demande comment faire, donne-lui CES commandes exactes à taper]"
+    : "[MISSION GUIDE — if the player asks what to do, give them THESE exact commands to type]";
+  return `\n\n${hdr} ${parts.join("  ·  ")}`;
+}
+
 function gameDigest(g: Game, lang: Lang): string {
   const f = g.flags;
   const money = `$${g.money >= 1000 ? Math.round(g.money).toLocaleString("en-US") : g.money.toFixed(2)}`;
@@ -189,7 +230,7 @@ function gameDigest(g: Game, lang: Lang): string {
   const fr = lang === "fr"
     ? `Jour ${g.day} (${hh}:${mm}), argent ${money}, réputation ${g.rep}, chaleur ${g.heat}, style ${g.style} (titre « ${styleT} »). Matos : ${gear}. Faction : ${faction}. ${jobs}. Missions actives/offertes : ${missions}. Activité récente : ${recent || "rien"}.`
     : `Day ${g.day} (${hh}:${mm}), money ${money}, rep ${g.rep}, heat ${g.heat}, style ${g.style} (title "${styleT}"). Gear: ${gear}. Faction: ${faction}. ${jobs}. Missions active/offered: ${missions}. Recent activity: ${recent || "nothing"}.`;
-  return `\n\n[GAME STATE — reference this for your replies] ${fr}`;
+  return `\n\n[GAME STATE — reference this for your replies] ${fr}${missionGuide(g, lang)}`;
 }
 
 // Daily scripted briefing, fired once per in-game day.
@@ -444,6 +485,16 @@ export async function chatReply(g: Game, message: string): Promise<string> {
   const msgs = past.length
     ? [...past, { role: "user" as const, content: ctx }]
     : [{ role: "user" as const, content: ctx }];
+  // when the player asks what to do / how to play, the MISSION GUIDE block in
+  // [GAME STATE] has the exact commands — make sure Noro-chan leans on it
+  const wantsHelp = /comment|quoi faire|je sais pas|que faire|how do i|what do i|stuck|perdu|bloqu/.test(message.toLowerCase());
+  if (wantsHelp && missionGuide(g, lang)) {
+    const hint = lang === "fr"
+      ? `\n\nLe joueur demande de l'aide. Regarde le bloc [GUIDE DE MISSION] ci-dessus et donne-lui LA commande exacte à taper (ex: « hack MegaCorp HQ », « missions deliver 1 »), une ou deux phrases max.`
+      : `\n\nThe player is asking for help. Look at the [MISSION GUIDE] block above and give them THE exact command to type (e.g. "hack MegaCorp HQ", "missions deliver 1"), one or two sentences max.`;
+    const last = msgs[msgs.length - 1];
+    msgs[msgs.length - 1] = { ...last, content: last.content + hint };
+  }
   const reply = await askAI(f, msgs, 30000, g.name || "Dave");
   const final = reply || (lang === "fr"
     ? `Hein~? Je n'ai pas entendu (LM Studio est hors ligne). Réessaie quand mon cerveau est branché, ${g.name || "Dave"}.`
