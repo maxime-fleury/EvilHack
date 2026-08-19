@@ -371,7 +371,7 @@ export function renderSettings(state, actions) {
     fontsize: el.querySelector("#set-font").value,
     anim: el.querySelector("#set-anim").value,
     sound: el.querySelector("#set-sound").value,
-    sndvol: (Number(el.querySelector("#set-vol").value) || 50) / 100,
+    sndvol: (() => { const v = Number(el.querySelector("#set-vol").value); return Number.isFinite(v) ? v / 100 : 0.5; })(),
     ambient: el.querySelector("#set-amb").value === "on",
     lang: el.querySelector("#set-lang").value,
     wallpaper: el.querySelector("#set-wall").value,
@@ -380,6 +380,8 @@ export function renderSettings(state, actions) {
     aiprompt: el.querySelector("#set-aiprompt").value,
     aiurl: el.querySelector("#set-aiurl").value.trim() || "http://127.0.0.1:3007",
   });
+  // the toast must show in the language the panel will switch to — queue it
+  // and dispatch after the re-render (see bottom of this function)
   const notify = () => window.dispatchEvent(new CustomEvent("game-toast", { detail: L_.saved }));
 
   el.innerHTML =
@@ -395,7 +397,7 @@ export function renderSettings(state, actions) {
     `<div class="setting-row"><label for="set-sound">${L_.sSound}</label><select id="set-sound" class="form-select form-select-sm" style="width:auto">${["on", "off"]
       .map((t) => `<option value="${t}" ${onOff(s.sound) === t ? "selected" : ""}>${t}</option>`)
       .join("")}</select></div>` +
-    `<div class="setting-row"><label for="set-vol">${L_.sVolume}</label><input id="set-vol" type="range" min="0" max="100" value="${Math.round((Number(state.flags.sndvol) || 0.5) * 100)}" class="form-range" style="width:120px" /></div>` +
+    `<div class="setting-row"><label for="set-vol">${L_.sVolume}</label><input id="set-vol" type="range" min="0" max="100" value="${(() => { const v = Number(state.flags?.sndvol); return Number.isFinite(v) ? Math.round(v * 100) : 50; })()}" class="form-range" style="width:120px" /></div>` +
     `<div class="setting-row"><label for="set-amb">${L_.sAmbient}</label><select id="set-amb" class="form-select form-select-sm" style="width:auto">${["off", "on"]
       .map((t) => `<option value="${t}" ${onOff(state.flags.ambient) === t ? "selected" : ""}>${t}</option>`)
       .join("")}</select></div>` +
@@ -431,7 +433,7 @@ export function renderSettings(state, actions) {
   }
 
   // ── auto-save on click/change — no more "apply" needed ──
-  const save = () => { actions.setSettings(collect()); notify(); };
+  const save = () => { actions.setSettings(collect()); pendingToast = true; };
   el.querySelectorAll("select, input, textarea").forEach((n) => {
     if (n.type === "file") return; // the upload handler does its own thing
     n.addEventListener("change", save); // selects + text fields (on blur)
@@ -485,7 +487,18 @@ export function renderSettings(state, actions) {
       actions.runCommand("reset");
     }
   });
+
+  // fire the "saved" toast with the *current* language — this renderSettings
+  // call runs after the state was applied, so L_ is already the new language
+  if (pendingToast) {
+    pendingToast = false;
+    notify();
+  }
 }
+
+// the auto-save toast must render in the language the panel switches to
+// (a settings change re-renders this panel with the new state first)
+let pendingToast = false;
 
 
 function bindButtons(root, actions) {

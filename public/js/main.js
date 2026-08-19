@@ -156,7 +156,7 @@ function applyState(s) {
   state = s;
   term.setSettings(s.settings);
   setSound(s.settings.sound);
-  setVolume(Number(s.flags?.sndvol) || 0.5);
+  setVolume((() => { const v = Number(s.flags?.sndvol); return Number.isFinite(v) ? v : 0.5; })());
   setAmbient(s.flags?.ambient === true);
   applyTheme(s.settings.theme);
   applyFont(s.settings.fontsize);

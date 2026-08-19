@@ -35,6 +35,13 @@ function lockTarget(g: Game, name: string, hours: number) {
 }
 
 const OS = ["Windows 98 (a classic)", "Linux (hardened, allegedly)", "a forgotten 2008 NAS", "Windows Server 2012 'don't ask'", "a smart fridge that got lost"];
+
+/** Strip surrounding quotes so `hack "MegaCorp HQ"` works like `hack MegaCorp HQ`. */
+function cleanName(s: string): string {
+  const t = s.trim();
+  if (t.length >= 2 && ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'")))) return t.slice(1, -1).trim();
+  return t;
+}
 const PORTS = ["3 ports open (21, 22, 1337)", "2 ports open (80, 443)", "4 ports open (you love to see it)", "1 port open (they tried)", "5 ports open (it's a museum)"];
 
 export const hackCmd: Command = {
@@ -58,7 +65,7 @@ export const hackCmd: Command = {
 
     // ── vector choice ───────────────────────────────────────────────────────
     if (mode === "brute" || mode === "exploit" || mode === "social") {
-      const tgtName = rest.join(" ") || (pending ? pending.target : "");
+      const tgtName = cleanName(rest.join(" ")) || (pending ? pending.target : "");
       const tgt = findTarget(g, tgtName);
       if (!tgt) return { lines: [err(t(lang, "hack.noTarget", { name: tgtName }))], minutes: 0 };
       if (pending && pending.target !== tgt.name) {
@@ -74,7 +81,7 @@ export const hackCmd: Command = {
     }
 
     // ── starting a hack: recon ──────────────────────────────────────────────
-    const tgt = findTarget(g, args.join(" "));
+    const tgt = findTarget(g, cleanName(args.join(" ")));
     if (!tgt) {
       if (pending) {
         return {

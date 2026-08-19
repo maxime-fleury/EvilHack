@@ -98,7 +98,7 @@ export const missionsCmd: Command = {
           }
           lines.push(title(t(lang, "mis.twistDone", { title: titleTxt })));
           lines.push(info(pick(lang, opt.result)));
-          lines.push(money(t(lang, "mis.reward", { money: `+${fmtMoney(payout)}`, r: Math.max(0, m.rep + (opt.rep || 0)), s: m.style + (opt.style || 0) })));
+          lines.push(money(t(lang, "mis.reward", { money: `${fmtMoney(payout)}`, r: Math.max(0, m.rep + (opt.rep || 0)), s: m.style + (opt.style || 0) })));
           addNews(g, t(lang, "mis.newsTitle", { title: titleTxt }), pick(lang, opt.result).slice(0, 140));
           logEvent(g, `Delivered ${titleTxt} (choice: ${optKey})`);
           addXp(g, 40, lines);
@@ -135,7 +135,7 @@ export const missionsCmd: Command = {
       g.heat += m.heat;
       const titleTxt = missionTitle(lang, m.template);
       lines.push(title(t(lang, "mis.complete", { title: titleTxt })));
-      lines.push(money(t(lang, "mis.reward", { money: `+${fmtMoney(payout)}`, r: m.rep, s: m.style })));
+      lines.push(money(t(lang, "mis.reward", { money: `${fmtMoney(payout)}`, r: m.rep, s: m.style })));
       // early delivery bonus: 10% if at least a full day ahead of the deadline
       if (m.deadline_day && g.day < m.deadline_day - 1) {
         const bonus = Math.round(payout * 0.1);
