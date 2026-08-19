@@ -2,7 +2,7 @@ import { cmd, getIntro, getHelp, getState, setSettingsApi } from "./api.js";
 import * as term from "./terminal.js";
 import { renderStats, renderMissions, renderInv, renderShop, renderPeople, renderNews, renderHelp, renderSettings, WALLS, unlockedWalls } from "./ui.js";
 import { initChat, addMsg, setupChat, setChatTabState } from "./chat.js";
-import { setupShell, setLocked, playBoot, showLogin, setLoginTexts, setShellLang, openApp } from "./os.js";
+import { setupShell, setLocked, playBoot, showLogin, setLoginTexts, setShellLang, setLangPicker, wireLangPicker, openApp } from "./os.js";
 import { wireTutorial, updateTutorial, showTutorial, isTutorialOpen } from "./tutorial.js";
 import { setSound, setVolume, sBoot, sPowerOff, sShutdown, sScreensaver, sAchievement, sLevelUp, sAlarm, sWarning, sCoin, sHackStart, sHackDone, sMission, sDanger, sMining, setAmbient } from "./sound.js";
 
@@ -177,6 +177,7 @@ function applyState(s) {
   updateTutorial(s);
   setLoginTexts(LOGIN_TXT[s.flags?.lang === "fr" ? "fr" : "en"]);
   setShellLang(s.flags?.lang === "fr" ? "fr" : "en");
+  setLangPicker(s.flags?.lang);
   setLocked(s.identified === false);
   soundEvents(s);
 }
@@ -299,6 +300,14 @@ async function boot() {
   setupShell({
     onLockClick: () => showLogin(submitName),
     onOpenApp: (id) => setChatTabState(id),
+  });
+
+  // EN/FR picker on the lock screen + login panel: persists via /api/settings
+  // (works before identification), then applyState re-renders everything.
+  wireLangPicker((lang) => {
+    setSettingsApi({ lang }).then((d) => {
+      if (d.state) applyState(d.state);
+    });
   });
 
   helpCommands = help.commands || [];

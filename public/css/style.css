@@ -398,6 +398,26 @@ textarea.ai-prompt { min-height: 110px; font-size: .75rem; }
 .login-error { margin-top: .9rem; font-size: .76rem; color: var(--term-err); min-height: 1em; }
 .login-hint { margin-top: 1.25rem; font-size: .68rem; color: var(--term-dim); opacity: .72; }
 
+/* Language picker — shown on the lock screen + login panel so new players
+   can pick their language before they ever type their handle */
+.lang-picker {
+  position: absolute; top: 18px; right: 20px; z-index: 5;
+  display: flex; gap: 2px; padding: 3px;
+  background: rgba(4, 8, 5, .65); border: 1px solid #1c2a1e; border-radius: 9px;
+}
+.login-lang { position: static; justify-content: center; margin-top: 1.1rem; }
+.lang-btn {
+  background: transparent; border: none; color: var(--term-dim);
+  font-family: inherit; font-size: .72rem; font-weight: 700; letter-spacing: .08em;
+  padding: .3rem .85rem; border-radius: 6px; cursor: pointer;
+  transition: color .15s, background .15s;
+}
+.lang-btn:hover { color: var(--term-fg); }
+.lang-btn.active {
+  background: color-mix(in srgb, var(--term-ok) 18%, transparent);
+  color: var(--term-ok); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--term-ok) 45%, transparent);
+}
+
 /* Guided tutorial overlay — forced once after login, skippable & relaunchable */
 #tutorial-panel {
   position: fixed; inset: 0; z-index: 940;

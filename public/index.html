@@ -36,6 +36,10 @@
 
   <!-- Lock screen: you arrive at a locked PC -->
   <div id="lock-screen" aria-label="lock screen">
+    <div class="lang-picker" id="lock-lang" aria-label="language">
+      <button class="lang-btn" data-lang="en">EN</button>
+      <button class="lang-btn" data-lang="fr">FR</button>
+    </div>
     <div class="lock-wrap">
       <div class="lock-clock" id="lock-clock">--:--</div>
       <div class="lock-date" id="lock-date"></div>
@@ -61,6 +65,10 @@
         <span class="login-at">@</span>
         <input id="login-input" maxlength="16" placeholder="handle" autocomplete="off" spellcheck="false" aria-label="handle" />
         <span class="login-caret" aria-hidden="true"></span>
+      </div>
+      <div class="lang-picker login-lang" id="login-lang" aria-label="language">
+        <button class="lang-btn" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="fr">FR</button>
       </div>
       <div class="login-actions">
         <button class="btn-term" id="login-random">🎲 surprise</button>

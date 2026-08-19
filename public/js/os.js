@@ -97,6 +97,27 @@ export function setLoginTexts(t) {
   if (chatIn) chatIn.placeholder = t.chatPh || "ask Noro-chan…";
 }
 
+let onLangPick = null;
+
+/** Highlight the active language on the lock screen + login panel pickers. */
+export function setLangPicker(lang) {
+  const want = lang === "fr" ? "fr" : "en";
+  document.querySelectorAll(".lang-btn").forEach((b) => {
+    b.classList.toggle("active", b.dataset.lang === want);
+  });
+}
+
+/** Wire the EN/FR buttons (lock screen + login panel). Called once at boot. */
+export function wireLangPicker(cb) {
+  onLangPick = cb;
+  document.querySelectorAll(".lang-btn").forEach((b) => {
+    b.addEventListener("click", () => {
+      setLangPicker(b.dataset.lang);
+      if (onLangPick) onLangPick(b.dataset.lang);
+    });
+  });
+}
+
 /** Switch the whole OS shell (window titles, icons, boot, start menu) language. */
 export function setShellLang(lang) {
   shellLang = lang === "fr" ? "fr" : "en";
