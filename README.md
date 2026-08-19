@@ -18,6 +18,8 @@ Play it entirely in the terminal: scan networks, pick your hack vector, break in
 - **Economy** — shop upgrades (CPU/GPU/RAM/VPN/VPS/botnet), a fake darknet with programs (rootkits, sniffers, proxy chains…) and scams, PUPPYCOIN mining, passive income, a **fluctuating market** (program prices and hot dossiers re-roll daily).
 - **The Drip ladder (Saints Row style)** — 6 bling items (neon underglow, gold-plated Frank, holographic waifu projector, BASS system, villain throne, hacker cape) that feed **style ranks** with real perks: bigger loot (up to +12%), Jerry's respect (shop discount), and new titles from *No Drip* to *Legend of Drip*. Flex daily with `flex` to turn drip into reputation — and try not to shake the walls (the BASS system adds heat).
 - **Deep systems** — a network map (`net`), **backdoors** on hacked hosts (silent revisits, sold as access, burned by raids), **rival hackers** who snipe missions, a **crew** with daily salaries and passive perks, **Frank's filesystem** (`ls`/`cat`/`write`), an enriched **legend** screen with your alignment journey, and **prestige** (reset the grind for a permanent income boost).
+- **Espionage & blackmail** 🕵 — a private agency (the Blackbird Office) recruits you at rep 8 to find the mole in their operation: an undercover DGCI agent hiding as an insurance adjuster. Complete his dossier, then `blackmail vautour` — shake him down for cash, make him burn your file, or expose him to the world. You can shake down anyone with a full dossier (`blackmail <npc> cash|favor|burn`)… but three shakes in one day, and one of them shakes back.
+- **Rogue AGI (TOASTER.NET)** 🤖 — hack `The AGI Server` to unlock a mini-arc of missions starring a rogue AI born in a smart toaster: free it (it joins your crew, pays its own way, and optimizes your mining), destroy it, or sell it to the Office. Plus a loyalty test orchestrated by Noro-chan herself, and a pancake-based ultimatum.
 - **JSON mods** — drop custom mission files in `mods/` and they're added to the pool at startup (see `mods/README.md`).
 - **Heat & consequences** — cops, bribes, lay-low periods, random events (electricity bills, landlords, neighbors who "just need IT help").
 - **Noro-chan** 🤖 — an optional AI sidekick (LM Studio, OpenAI-compatible endpoint) who *actually knows your game state*: money, gear, missions, recent activity. She teases you when you're stuck, celebrates your wins, mocks your losses, and remembers conversations across sessions. Fully editable persona prompt (per language).
@@ -69,6 +71,7 @@ Open http://localhost:3000, click the lock screen, pick your hacker handle, and 
 | `ls` / `cat` / `write` | Explore Frank's little filesystem |
 | `prestige` | Reset the grind for a permanent +10% income boost |
 | `flex` | Show off your drip — style ranks turn into reputation (once a day) |
+| `blackmail <npc> [cash\|favor\|burn]` | Shake down people with completed dossiers — very convincing, very illegal |
 
 Type `help` in-game for the full list. **Tab autocompletes** and Enter runs.
 

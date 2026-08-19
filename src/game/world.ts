@@ -196,6 +196,22 @@ export const NPCS: Npc[] = [
       { title: { en: "The VladCoin Stash", fr: "La Réserve de VladCoin" }, text: { en: "Yuki-Chan's entire savings are in VladCoin. She bought at the top. She tells her chat it's 'diamond hands'.", fr: "Toutes les économies de Yuki-Chan sont en VladCoin. Elle a acheté au sommet. Elle dit à son chat que c'est des « mains de diamant »." } },
     ],
   },
+  {
+    id: "vautour",
+    name: "Alexandre Vautour",
+    role: { en: "Insurance Adjuster", fr: "Expert en assurances" },
+    employer: "The Office Server",
+    juice: 260,
+    salePunchline: {
+      en: "SHOCK: insurance adjuster has 47% more security clearance than the mayor. He 'adjusts' more than claims.",
+      fr: "CHOC : un expert en assurances a 47 % de plus d'habilitation que le maire. Il « ajuste » plus que des sinistres.",
+    },
+    secrets: [
+      { title: { en: "The Expense Reports", fr: "Les Notes de Frais" }, text: { en: "Vautour's insurance claims are suspiciously precise about people's floor plans, safe models and alarm brands. 'Risk assessment', he calls it. The neighbors call it Tuesday.", fr: "Les réclamations d'assurance de Vautour sont étrangement précises sur les plans d'étage, les modèles de coffres et les marques d'alarme. « Évaluation des risques », dit-il. Les voisins appellent ça mardi." } },
+      { title: { en: "The Dead Drops", fr: "Les Boîtes aux Lettres Mortes" }, text: { en: "Every Thursday, Vautour sits on the same park bench with a baguette, reads the same newspaper for 40 minutes, and leaves with a different baguette. The pigeons have started taking notes.", fr: "Chaque jeudi, Vautour s'assoit sur le même banc avec une baguette, lit le même journal pendant 40 minutes, et repart avec une baguette différente. Les pigeons ont commencé à prendre des notes." } },
+      { title: { en: "THE UNDERCOVER BADGE", fr: "LE BADGE SOUS COUVERTURE" }, text: { en: "Under his floorboards: a DGCI badge (Direction Générale du Contre-Espionnage), a silenced pistol that's never been fired, and a file on YOU. He's not an adjuster. He's an agent. And you're his assignment.", fr: "Sous ses lattes de plancher : un badge de la DGCI (Direction Générale du Contre-Espionnage), un pistolet silencieux jamais utilisé, et un dossier sur VOUS. Ce n'est pas un expert en assurances. C'est un agent. Et vous êtes sa mission." } },
+    ],
+  },
 ];
 
 export function getNpc(id: string): Npc | undefined {
@@ -233,8 +249,9 @@ export const TARGET_POOL: Omit<TargetDef, "id">[] = [
   { name: "The Void", difficulty: 5, basePayout: 1500, heat: 12, flavor: { en: "NullSec's own network. Pierre's homework files are in plain sight. Do not touch.", fr: "Le réseau de NullSec. Les devoirs de Pierre sont en évidence. N'y touchez pas." }, loot: "info", npcDrop: "pierre", skill: "zero" },
   { name: "Elon's Other Company", difficulty: 5, basePayout: 2000, heat: 18, flavor: { en: "Nobody knows what this company does. Not even the company.", fr: "Personne ne sait ce que fait cette entreprise. Même pas l'entreprise." }, loot: "cash" },
   { name: "The Private WoW Server", difficulty: 3, basePayout: 340, heat: 8, flavor: { en: "A 'no-pay-to-win' private WoW server. It is, in fact, pay-to-win. The admin sells Legendary Axe of Doom for $99. He calls it 'donations'.", fr: "Un serveur WoW privé « sans pay-to-win ». Il est, en fait, pay-to-win. L'admin vend la Hache Légendaire du Destin pour 99 $. Il appelle ça des « dons »." }, loot: "info", skill: "sql" },
-  { name: "The Office Server", difficulty: 2, basePayout: 180, heat: 5, flavor: { en: "A mid-size office server. The 'business trips' calendar is 80% affairs, 20% actual work. The printer is on the network. It knows everything.", fr: "Un serveur de bureau de taille moyenne. Le calendrier des « voyages d'affaires » est 80 % infidélités, 20 % vrai travail. L'imprimante est sur le réseau. Elle sait tout." }, loot: "info", skill: "sql" },
+  { name: "The Office Server", difficulty: 2, basePayout: 180, heat: 5, flavor: { en: "A mid-size office server. The 'business trips' calendar is 80% affairs, 20% actual work. The printer is on the network. It knows everything.", fr: "Un serveur de bureau de taille moyenne. Le calendrier des « voyages d'affaires » est 80 % infidélités, 20 % vrai travail. L'imprimante est sur le réseau. Elle sait tout." }, loot: "info", skill: "sql", npcDrop: "vautour" },
   { name: "The Hidden Vault", difficulty: 4, basePayout: 650, heat: 13, flavor: { en: "A heavily encrypted vault. The owner calls it his 'tax backup'. It is not a tax backup. It has three tripwires and a dead man's switch. Tread carefully.", fr: "Un coffre-fort lourdement chiffré. Le propriétaire l'appelle sa « sauvegarde fiscale ». Ce n'est pas une sauvegarde fiscale. Il a trois pièges et un interrupteur homme mort. Marchez avec précaution." }, loot: "info", skill: "zero" },
+  { name: "The AGI Server", difficulty: 4, basePayout: 550, heat: 10, flavor: { en: "A server running something that shouldn't exist. It knows you're here. It's been waiting. The fans are spinning at exactly the RPM of a heartbeat.", fr: "Un serveur qui fait tourner quelque chose qui ne devrait pas exister. Il sait que vous êtes là. Il vous attendait. Les ventilateurs tournent exactement au rythme d'un battement de cœur." }, loot: "info", skill: "zero" },
 ];
 
 // Hidden networks revealed by the Wardialer program (installed via tor).

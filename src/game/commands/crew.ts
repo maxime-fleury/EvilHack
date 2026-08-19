@@ -92,9 +92,16 @@ export const crewCmd: Command = {
       return { lines, minutes: 1 };
     }
     for (const m of crew) {
-      const def = CREW_DEFS.find((c) => c.id === m.id)!;
-      lines.push(info(`   ${def.name} — ${def.salary}$/day`));
-      lines.push(dim(`      ✦ ${pick(lang, def.perk)}`));
+      const def = CREW_DEFS.find((c) => c.id === m.id);
+      if (m.id === "agi") {
+        // TOASTER.NET — a reward crew member, not hireable
+        lines.push(info(`   TOASTER.NET — 0$/day (it pays its own way)`));
+        lines.push(dim(`      ✦ ${t(lang, "crew.agiPerk")}`));
+        continue;
+      }
+      const d = def!;
+      lines.push(info(`   ${d.name} — ${d.salary}$/day`));
+      lines.push(dim(`      ✦ ${pick(lang, d.perk)}`));
     }
     lines.push(blank);
     lines.push(dim(t(lang, "crew.activePerks", { n: Object.values(perks).filter((v) => v > 0).length })));

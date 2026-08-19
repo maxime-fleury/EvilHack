@@ -149,6 +149,38 @@ export const ARCS: ArcDef[] = [
     perkText: { en: "Perk: 'Focaccia Returns' — Gertie sends you a $10/day 'community dividend'.", fr: "Perk : « Rends de Focaccia » — Gertie vous envoie un « dividende communautaire » de 10 $/jour." },
     trophy: "gertie",
   },
+
+  // ── THE BLACKBIRD OFFICE ────────────────────────────────────────────────
+  // A private espionage agency. They noticed you. They want you to find the
+  // mole in their operation — an undercover DGCI agent named Vautour.
+  {
+    id: "merle",
+    title: { en: "The Blackbird Office", fr: "Le Bureau du Merle" },
+    hook: { en: "Dead pigeon found with an SD card around its neck — authorities baffled", fr: "Un pigeon mort retrouvé avec une carte SD autour du cou — les autorités perplexes" },
+    blurb: { en: "A private espionage agency is recruiting. They don't hire. They notice.", fr: "Une agence d'espionnage privée recrute. Ils n'embauchent pas. Ils remarquent." },
+    discover: (g) => g.rep >= 8,
+    intro: [
+      { en: "The pigeon was on your windowsill. The SD card around its neck contains a single file: a voice memo. 'Good evening. You broke into a bank, a government substation, and my grandmother's router for fun. We noticed. We're the Blackbird Office — we handle problems the state pretends don't exist. There's a mole in our operation. Find them. Handle them. Your first paycheck is already wired.' It's signed: MERLE.", fr: "Le pigeon était sur votre rebord de fenêtre. La carte SD autour de son cou contient un seul fichier : un message vocal. « Bonsoir. Vous vous êtes introduit dans une banque, une sous-station gouvernementale, et le routeur de ma grand-mère, pour le plaisir. Nous vous avons remarqué. Nous sommes le Bureau du Merle — nous gérons les problèmes que l'État prétend inexistants. Il y a une taupe dans notre opération. Trouvez-la. Réglez-la. Votre première paie est déjà virée. » Signé : MERLE." },
+      { en: "Optional. Paranoid. Pays better than the darknet and asks fewer questions — mostly about the mole.", fr: "Facultatif. Paranoïaque. Paie mieux que le darknet et pose moins de questions — surtout au sujet de la taupe." },
+      { en: "→ Type 'arcs' to track this arc.", fr: "→ Tapez « arcs » pour suivre cet arc." },
+    ],
+    steps: [
+      { desc: { en: "Prove yourself — hack The Office Server", fr: "Faire ses preuves — hacker The Office Server" }, done: (g) => hacked(g, "The Office Server") },
+      { desc: { en: "Complete Vautour's dossier (3/3 secrets)", fr: "Compléter le dossier de Vautour (3/3 secrets)" }, done: (g) => (g.contacts.find((c) => c.npc === "vautour")?.fragments || 0) >= 3 },
+      { desc: { en: "Deal with the mole — run 'blackmail vautour' (cash / favor / burn)", fr: "Régler la taupe — « blackmail vautour » (cash / favor / burn)" }, done: (g) => !!g.flags.merleChoice },
+    ],
+    finale: [
+      { en: "The mole is handled. MERLE's only reply is a single line: 'The Office remembers. If you ever need a problem to disappear — or to disappear a problem — you know the frequency.' The wire goes dead. Somewhere, a pigeon gains a second of peace.", fr: "La taupe est réglée. La seule réponse de MERLE est une ligne : « Le Bureau se souvient. Si un jour tu as besoin de faire disparaître un problème — ou de te faire disparaître d'un problème — tu connais la fréquence. » La ligne se coupe. Quelque part, un pigeon gagne une seconde de paix." },
+      { en: "The Blackbird Office never touches you again. The DGCI is furious — but they can't prove anything. You made an enemy of a secret police, and a friend of a deeper secret.", fr: "Le Bureau du Merle ne vous recontacte plus jamais. La DGCI est furieuse — mais ne peut rien prouver. Vous vous êtes fait un ennemi au sein d'une police secrète, et un ami auprès d'un secret plus profond." },
+    ],
+    money: 6000,
+    rep: 10,
+    style: 20,
+    xp: 300,
+    perkFlag: "arcMerleDone",
+    perkText: { en: "Perk: 'The Blackbird' — the Office owes you. Your double agent keeps your heat low and the intel flowing.", fr: "Perk : « Le Merle » — le Bureau vous doit une fierté. Votre agent double refroidit votre chaleur et fait affluer les infos." },
+    trophy: "merle",
+  },
 ];
 
 export function arcById(id: string): ArcDef | undefined {

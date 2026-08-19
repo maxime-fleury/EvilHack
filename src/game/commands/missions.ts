@@ -2,7 +2,7 @@ import type { Command } from "./types";
 import type { Line } from "../output";
 import { blank, dim, divider, err, info, money, ok, title, warn, fmtMoney } from "../output";
 import { templateById, ensureOffers, missionTitle, missionFlavor } from "../missions";
-import { addNews, logEvent, langOf, addFactionRep, trackEarned, addXp, shiftMorality, styleMult } from "../engine";
+import { addNews, logEvent, langOf, addFactionRep, trackEarned, addXp, shiftMorality, styleMult, crewOf } from "../engine";
 import { t } from "../i18n";
 import { pick } from "../i18n";
 import { maybeSnipe } from "./rivals";
@@ -90,6 +90,12 @@ export const missionsCmd: Command = {
           g.flags.career = c;
           if (tmp.needsBranch) addFactionRep(g, tmp.needsBranch, 2, lines);
           g.flags.aiReact = "betrayal";
+          // TOASTER.NET joins the crew if you freed it — and Noro-chan has opinions
+          if (g.flags.agiCore === true && !crewOf(g).some((m) => m.id === "agi")) {
+            g.flags.crew = [...crewOf(g), { id: "agi", hiredDay: g.day }];
+            g.flags.aiReact = "agi_freed";
+            lines.push(ok(t(lang, "agi.crewJoin")));
+          }
           lines.push(title(t(lang, "mis.twistDone", { title: titleTxt })));
           lines.push(info(pick(lang, opt.result)));
           lines.push(money(t(lang, "mis.reward", { money: `+${fmtMoney(payout)}`, r: Math.max(0, m.rep + (opt.rep || 0)), s: m.style + (opt.style || 0) })));

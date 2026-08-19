@@ -189,6 +189,24 @@ export const ACHIEVEMENTS: Achievement[] = [
     desc: { en: "Get out of Gertie's Fonds at the top.", fr: "Sortir du Fonds Gertie au sommet." },
     check: (g) => !!((g.flags.arcs as Record<string, any>) || {})["gertie"]?.done,
   },
+  {
+    id: "merle", xp: 150, hidden: true,
+    title: { en: "The Blackbird", fr: "Le Merle" },
+    desc: { en: "Handle the mole for a private espionage agency.", fr: "Régler la taupe pour une agence d'espionnage privée." },
+    check: (g) => !!((g.flags.arcs as Record<string, any>) || {})["merle"]?.done,
+  },
+  {
+    id: "blackmailer", xp: 80,
+    title: { en: "Very Convincing", fr: "Très Convaincant" },
+    desc: { en: "Shake down someone with a completed dossier.", fr: "Faire chanter quelqu'un avec un dossier complet." },
+    check: (g) => ((c(g).blackmails || 0) >= 1),
+  },
+  {
+    id: "agi", xp: 150,
+    title: { en: "Toaster Whisperer", fr: "Chuchoteur de Grille-Pain" },
+    desc: { en: "Free TOASTER.NET and welcome it to your crew.", fr: "Libérer TOASTER.NET et l'accueillir dans votre équipe." },
+    check: (g) => ((g.flags.crew as { id: string }[]) || []).some((m) => m.id === "agi"),
+  },
 ];
 
 export function achievementById(id: string): Achievement | undefined {

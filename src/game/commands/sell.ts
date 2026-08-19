@@ -23,11 +23,12 @@ export const peopleCmd: Command = {
       const npc = getNpc(c.npc);
       if (!npc) continue;
       const frag = "●".repeat(c.fragments) + "○".repeat(3 - c.fragments);
-      const status = c.sold ? t(lang, "people.sold") : c.fragments >= 3 ? t(lang, "people.ready") : "";
+      const blackmailed = ((g.flags.blackmailed as string[]) || []).includes(npc.id);
+      const status = c.sold ? t(lang, "people.sold") : blackmailed ? t(lang, "people.blackmailed") : c.fragments >= 3 ? t(lang, "people.ready") : "";
       lines.push(info(`   ${npc.name} — ${pick(lang, npc.role)}`));
       lines.push(dim(`     dossier ${frag} ${status ? `[${status}]` : ""}`));
       if (c.sold) lines.push(dim(`     ${pick(lang, npc.salePunchline)}`));
-      else if (c.fragments >= 3) lines.push(dim(`     → sell ${npc.id}`));
+      else if (c.fragments >= 3) lines.push(dim(`     → sell ${npc.id}  ·  blackmail ${npc.id} (cash|favor|burn)`));
       else lines.push(dim(t(lang, "people.hint", { e: npc.employer })));
       lines.push(blank);
     }

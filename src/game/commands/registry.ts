@@ -28,6 +28,7 @@ import { lsCmd, catCmd, writeCmd } from "./files";
 import { legendCmd } from "./legend";
 import { prestigeCmd } from "./prestige";
 import { flexCmd } from "./flex";
+import { blackmailCmd } from "./blackmail";
 
 const COMMANDS: Command[] = [
   helpCmd,
@@ -74,6 +75,7 @@ const COMMANDS: Command[] = [
   legendCmd,
   prestigeCmd,
   flexCmd,
+  blackmailCmd,
 ];
 
 export const registry = new Map<string, Command>();

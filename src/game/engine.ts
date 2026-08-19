@@ -156,7 +156,8 @@ export function cpuPower(g: Game): number {
   return (1 + g.cpu * 0.9) * rgbPenalty(g);
 }
 export function miningRate(g: Game): number {
-  return (2 + g.gpu * 9 + g.toaster * 4 + g.vps * 1.5 + (hasProgram(g, "miner2") ? 3 : 0) + levelOf(g) * 0.5) * rgbPenalty(g);
+  const agiBaker = g.flags.agiBaker ? 2 : 0; // TOASTER.NET perfects your toast timing
+  return (2 + g.gpu * 9 + g.toaster * 4 + g.vps * 1.5 + (hasProgram(g, "miner2") ? 3 : 0) + levelOf(g) * 0.5 + agiBaker) * rgbPenalty(g);
 }
 export function parallelSlots(g: Game): number {
   return 1 + g.ram + g.vps;
@@ -168,6 +169,7 @@ export function heatMult(g: Game): number {
   if (isArcDone(g, "spectre")) m *= 0.85; // arc perk: the Spectre's shade
   m *= Math.max(0.7, 1 - levelOf(g) * 0.01); // level perk: quieter ops
   m *= Math.max(0.7, 1 - crewPerks(g).heat); // a whisperer on the team cools traces
+  if (isArcDone(g, "merle") && g.flags.merleChoice === "turn") m *= 0.92; // double agent covers your traces
   return m;
 }
 
@@ -352,6 +354,10 @@ export function crewPerks(g: Game): { mining: number; heat: number; fragments: n
     if (m.id === "socialite") p.heat += 0.15;
     if (m.id === "whisper") p.fragments += 0.25;
     if (m.id === "recruiter") p.rep += 1;
+    if (m.id === "agi") {
+      p.mining += 3; // it optimizes your toaster
+      p.fragments += 0.25; // it sees everything
+    }
   }
   return p;
 }
@@ -361,7 +367,7 @@ export function payCrew(g: Game, out: Line[]): void {
   const members = crewOf(g);
   if (!members.length) return;
   const lang = langOf(g);
-  const SALARY: Record<string, number> = { scriptkiddie: 25, socialite: 40, whisper: 60, recruiter: 90 };
+  const SALARY: Record<string, number> = { scriptkiddie: 25, socialite: 40, whisper: 60, recruiter: 90, agi: 0 }; // TOASTER.NET pays its own way
   let total = 0;
   for (const m of members) total += SALARY[m.id] || 0;
   if (g.money >= total) {
@@ -1102,6 +1108,10 @@ export function tick(g: Game, minutes: number, out: Line[]) {
   if (earned > 0.001) out.push(dim(`⛏  ${t(lang, "miner.rate", { r: fmtMoney(rate) })}: +${fmtMoney(earned)}`));
   // Gertie's daily dividend (arc perk): silent, like all passive income
   if (isArcDone(g, "gertie")) g.money += (10 * (minutes / 1440)) * prestigeMult(g);
+  // The Blackbird's double agent (merle arc, 'turn' choice): intel pays daily
+  if (isArcDone(g, "merle") && g.flags.merleChoice === "turn") g.money += (40 * (minutes / 1440)) * prestigeMult(g);
+  // TOASTER.NET's toaster-botnet dividends
+  if (crewOf(g).some((m) => m.id === "agi")) g.money += (15 * (minutes / 1440)) * prestigeMult(g);
 
   // advance clock
   g.minutes += minutes;
