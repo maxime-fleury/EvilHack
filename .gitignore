@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.freebuff
+data/
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+/test-*.ts
+.test*.ts
