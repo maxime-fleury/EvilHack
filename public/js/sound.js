@@ -144,6 +144,27 @@ export const sMission = () => { tone(523, 0.07, "triangle", 0.025); tone(659, 0.
 export const sHackStart = () => { tone(300, 0.05, "sawtooth", 0.015); tone(450, 0.05, "sawtooth", 0.015, 0.05); noiseBurst(0.04, 0.012, 0.1); };
 export const sHackDone = () => { tone(392, 0.06, "square", 0.02); tone(523, 0.06, "square", 0.02, 0.06); tone(659, 0.1, "square", 0.02, 0.12); };
 export const sDanger = () => { tone(98, 0.5, "sine", 0.04, 0, -10); tone(98, 0.4, "sine", 0.03, 0.15); };
+export const sRaid = () => {
+  // heavy door knock: two thuds with a low boom
+  tone(70, 0.18, "sine", 0.05, 0, -8);
+  noiseBurst(0.06, 0.03, 0.02);
+  tone(70, 0.18, "sine", 0.05, 0.28, -8);
+  noiseBurst(0.06, 0.03, 0.3);
+  tone(55, 0.5, "sine", 0.03, 0.5, -14);
+};
+export const sBlackmail = () => {
+  // dark, ominous two-note drop
+  tone(196, 0.22, "sawtooth", 0.025, 0, -40);
+  tone(147, 0.3, "sawtooth", 0.028, 0.24, -55);
+  noiseBurst(0.03, 0.015, 0.05);
+};
+export const sSale = () => {
+  // cash drop with a satisfied ding
+  tone(880, 0.06, "triangle", 0.025);
+  tone(1108, 0.09, "triangle", 0.025, 0.06);
+  tone(1760, 0.16, "square", 0.02, 0.12);
+  noiseBurst(0.04, 0.012, 0.05);
+};
 
 // ── Ambient hum (optional) ─────────────────────────────────────────────────
 let ambientOn = false;

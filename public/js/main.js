@@ -4,7 +4,7 @@ import { renderStats, renderMissions, renderInv, renderShop, renderPeople, rende
 import { initChat, addMsg, setupChat, setChatTabState } from "./chat.js";
 import { setupShell, setLocked, playBoot, showLogin, setLoginTexts, setShellLang, setLangPicker, wireLangPicker, openApp } from "./os.js";
 import { wireTutorial, updateTutorial, showTutorial, isTutorialOpen } from "./tutorial.js";
-import { setSound, setVolume, sBoot, sPowerOff, sShutdown, sScreensaver, sAchievement, sLevelUp, sAlarm, sWarning, sCoin, sHackStart, sHackDone, sMission, sDanger, sMining, setAmbient } from "./sound.js";
+import { setSound, setVolume, sBoot, sPowerOff, sShutdown, sScreensaver, sAchievement, sLevelUp, sAlarm, sWarning, sCoin, sHackStart, sHackDone, sMission, sDanger, sRaid, sBlackmail, sSale, sMining, setAmbient } from "./sound.js";
 
 let state = null;
 let helpCommands = [];
@@ -239,6 +239,9 @@ async function runCommand(val) {
     if (/mission.*(livr|termin|paid)|terminée et|deliver/.test(low)) sMission();
     if (low.includes("puppycoin") && (low.includes("acheté") || low.includes("bought"))) sCoin();
     if (low.includes("🔥") || low.includes("🚨") || /heat.*(crit|dang|max)/i.test(low)) sWarning();
+    if (low.includes("frappe à la porte") || low.includes("knock") || /^raid\b/.test(val.trim())) sRaid();
+    if (low.includes("l'enveloppe est lourde") || /envelope is heavy/i.test(low)) sBlackmail();
+    if (low.includes("juteux") || /juicy/i.test(low)) sSale();
     if (data.state) applyState(data.state);
     // "tutorial start" re-opens the guided overlay (skip closes it via the button)
     if (/^tutorial\s+(start|replay)/.test(val.trim())) {
