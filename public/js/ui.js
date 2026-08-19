@@ -21,7 +21,7 @@ const L = (lang) => ({
     noInv: "Frank est un stock. Frank est triste.", noSoft: "aucun logiciel",
     shopHint: "Améliore avec <b>buy</b> dans le terminal, ou visite le faux Tor pour des programmes : <b>tor</b>.",
     commands: "COMMANDES", helpTip: "Clique sur une commande pour la remplir dans le terminal. Tape <b>help &lt;cmd&gt;</b> pour les détails. Tab complète automatiquement.",
-    sTheme: "Thème", sFont: "Taille de police", sAnim: "Animations", sSound: "Sons", sVolume: "Volume", sAmbient: "Bruit ambiant", sLang: "Langue", sWall: "Fond d'écran", wallUpload: "ou importe une image locale",
+    sTheme: "Thème", sFont: "Taille de police", sAnim: "Animations", sSound: "Sons", sVolume: "Volume", sAmbient: "Bruit ambiant", sLang: "Langue", sWall: "Fond d'écran", wallUpload: "ou importe une image locale", saved: "✓ réglages enregistrés",
     wallReqRep: "Rép. {n} requis", wallReqHat: "Alignement Black Hat requis", wallReqDrip: "Drip rang 4+ ou Gold-Plated Frank requis", wallReqPrestige: "Prestige {n}+ requis", wallBig: "Image trop lourde (max 1,5 Mo) — le disque de Frank est déjà assez lent.",
     hat: "Alignement (0 white · 50 gray · 100 black)",
     aiName: "Nom de l'assistante IA", aiPrompt: "Prompt de l'assistante IA (éditable)", server: "Serveur (LM Studio)", urlPort: "URL + port — ex. http://127.0.0.1:3007",
@@ -45,7 +45,7 @@ const L = (lang) => ({
     noInv: "Frank is stock. Frank is sad.", noSoft: "no software",
     shopHint: "Upgrade with <b>buy</b> in the terminal, or visit the fake Tor for programs: <b>tor</b>.",
     commands: "COMMANDS", helpTip: "Click a command to fill the terminal. Type <b>help &lt;cmd&gt;</b> for details. Tab autocompletes.",
-    sTheme: "theme", sFont: "font size", sAnim: "animations", sSound: "sound", sVolume: "volume", sAmbient: "ambient hum", sLang: "language", sWall: "wallpaper", wallUpload: "or import a local image",
+    sTheme: "theme", sFont: "font size", sAnim: "animations", sSound: "sound", sVolume: "volume", sAmbient: "ambient hum", sLang: "language", sWall: "wallpaper", wallUpload: "or import a local image", saved: "✓ settings saved",
     wallReqRep: "rep {n} required", wallReqHat: "Black Hat alignment required", wallReqDrip: "style rank 4+ or Gold-Plated Frank required", wallReqPrestige: "prestige {n}+ required", wallBig: "Image too heavy (max 1.5MB) — Frank's disk is slow enough already.",
     hat: "Alignment (0 white · 50 gray · 100 black)",
     aiName: "AI assistant name", aiPrompt: "AI assistant prompt (editable)", server: "server (LM Studio)", urlPort: "URL + port — e.g. http://127.0.0.1:3007",
@@ -353,6 +353,35 @@ export function renderSettings(state, actions) {
   const s = state.settings;
   const L_ = L(state.flags?.lang);
   const onOff = (v) => (v ? "on" : "off");
+
+  // auto-save rebuilds this panel on every change — never nuke what the
+  // player is typing. Keep the live values + caret of the text fields, and
+  // restore them (and focus) after the re-render.
+  const keep = {};
+  const focusEl = document.activeElement;
+  const focusId = focusEl?.id || "";
+  const focusPos = focusEl && typeof focusEl.selectionStart === "number" ? focusEl.selectionStart : -1;
+  for (const id of ["set-ainame", "set-aiprompt", "set-aiurl", "set-wallurl"]) {
+    const n = el.querySelector("#" + id);
+    if (n) keep[id] = n.value;
+  }
+  // read the live panel values — used by auto-save AND the manual button
+  const collect = () => ({
+    theme: el.querySelector("#set-theme").value,
+    fontsize: el.querySelector("#set-font").value,
+    anim: el.querySelector("#set-anim").value,
+    sound: el.querySelector("#set-sound").value,
+    sndvol: (Number(el.querySelector("#set-vol").value) || 50) / 100,
+    ambient: el.querySelector("#set-amb").value === "on",
+    lang: el.querySelector("#set-lang").value,
+    wallpaper: el.querySelector("#set-wall").value,
+    wallpaperUrl: el.querySelector("#set-wallurl")?.value.trim() || "",
+    ainame: el.querySelector("#set-ainame").value,
+    aiprompt: el.querySelector("#set-aiprompt").value,
+    aiurl: el.querySelector("#set-aiurl").value.trim() || "http://127.0.0.1:3007",
+  });
+  const notify = () => window.dispatchEvent(new CustomEvent("game-toast", { detail: L_.saved }));
+
   el.innerHTML =
     `<div class="setting-row"><label for="set-theme">${L_.sTheme}</label><select id="set-theme" class="form-select form-select-sm" style="width:auto">${["green", "amber", "blue", "matrix", "purple"]
       .map((t) => `<option value="${t}" ${s.theme === t ? "selected" : ""}>${t}</option>`)
@@ -390,9 +419,33 @@ export function renderSettings(state, actions) {
     `<div class="panel-card"><div class="k">${L_.server}</div><div class="v mt-1" style="font-size:.72rem">${L_.urlPort}</div><input id="set-aiurl" class="form-control form-control-sm mt-1" value="${esc(state.flags.aiurl || "http://127.0.0.1:3007")}" placeholder="http://127.0.0.1:3007" /><div class="v mt-1" style="font-size:.72rem" id="ai-status">${L_.statusUnknown}</div><button class="btn-term mt-2" id="test-ai">${L_.testConn}</button></div>` +
     `<div class="panel-card danger-zone"><div class="k">${L_.dangerZone}</div><div class="v mt-1" style="font-size:.75rem">${L_.dangerText}</div><button class="btn-term btn-danger mt-2" id="reset-game">${L_.resetSave}</button></div>` +
     `<button class="btn-term mt-2" id="save-settings">${L_.applySettings}</button>`;
-  el.querySelectorAll("select, input, textarea").forEach((n) =>
-    n.addEventListener("change", () => el.querySelector("#save-settings").style.display = "inline-block")
-  );
+  // restore what was being typed (and where the caret was)
+  for (const [id, v] of Object.entries(keep)) {
+    const n = el.querySelector("#" + id);
+    if (n) n.value = v;
+  }
+  const back = focusId ? el.querySelector("#" + focusId) : null;
+  if (back && back.type !== "file" && !["BUTTON"].includes(back.tagName)) {
+    back.focus();
+    if (focusPos >= 0 && typeof back.setSelectionRange === "function") back.setSelectionRange(focusPos, focusPos);
+  }
+
+  // ── auto-save on click/change — no more "apply" needed ──
+  const save = () => { actions.setSettings(collect()); notify(); };
+  el.querySelectorAll("select, input, textarea").forEach((n) => {
+    if (n.type === "file") return; // the upload handler does its own thing
+    n.addEventListener("change", save); // selects + text fields (on blur)
+  });
+  // text fields also save on Enter (single-line) / Ctrl+Enter (textarea)
+  el.querySelectorAll("input[type=text], input:not([type]), textarea").forEach((n) => {
+    if (n.type === "file") return;
+    n.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (n.tagName === "TEXTAREA" ? e.ctrlKey || e.metaKey : true)) {
+        e.preventDefault();
+        n.blur(); // fires 'change' → save
+      }
+    });
+  });
   const wallSel = el.querySelector("#set-wall");
   const toggleWallRows = () => {
     const show = wallSel.value === "custom";
@@ -426,21 +479,7 @@ export function renderSettings(state, actions) {
       statusEl.textContent = L_.statusOffline(url);
     }
   });
-  el.querySelector("#save-settings").addEventListener("click", () => {
-    const theme = el.querySelector("#set-theme").value;
-    const font = el.querySelector("#set-font").value;
-    const anim = el.querySelector("#set-anim").value;
-    const sound = el.querySelector("#set-sound").value;
-    const vol = (Number(el.querySelector("#set-vol").value) || 50) / 100;
-    const ambient = el.querySelector("#set-amb").value === "on";
-    const lang = el.querySelector("#set-lang").value;
-    const wallpaper = wallSel.value;
-    const wallpaperUrl = el.querySelector("#set-wallurl")?.value.trim() || "";
-    const ainame = el.querySelector("#set-ainame").value;
-    const aiprompt = el.querySelector("#set-aiprompt").value;
-    const aiurl = el.querySelector("#set-aiurl").value.trim() || "http://127.0.0.1:3007";
-    actions.setSettings({ theme, fontsize: font, anim, sound, sndvol: vol, ambient, lang, ainame, aiprompt, aiurl, wallpaper, wallpaperUrl });
-  });
+  el.querySelector("#save-settings").addEventListener("click", () => save());
   el.querySelector("#reset-game").addEventListener("click", () => {
     if (confirm(state.flags?.lang === "fr" ? "Réinitialiser la sauvegarde ? Tout sera effacé. Frank se souviendra." : "Reset the save? Everything will be wiped. Frank will remember.")) {
       actions.runCommand("reset");

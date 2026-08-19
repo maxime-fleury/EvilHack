@@ -297,5 +297,8 @@ async function boot() {
   term.focusInput();
 }
 
+// generic toast channel — the settings panel uses it to confirm auto-saves
+window.addEventListener("game-toast", (e) => showWallToast(e.detail));
+
 watchPower();
 boot();
