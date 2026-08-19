@@ -32,7 +32,13 @@ Play it entirely in the terminal: scan networks, pick your hack vector, break in
 
 ## 🚀 Getting started
 
-Requires [Bun](https://bun.sh).
+Requires [Bun](https://bun.sh). One line to install and run:
+
+```bash
+bun install && bun run dev   # serves the game on http://localhost:3000
+```
+
+Or, step by step:
 
 ```bash
 bun install
