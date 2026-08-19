@@ -32,6 +32,7 @@ export const prestigeCmd: Command = {
     g.chair = 0;
     g.toaster = 0;
     g.cam = 0;
+    g.flags.bling = []; // the drip is gone. the legend of the drip remains.
     g.exploits = [];
     g.flags.programs = [];
     g.flags.puppyOwned = 0;

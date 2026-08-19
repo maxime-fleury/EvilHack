@@ -16,6 +16,7 @@ Play it entirely in the terminal: scan networks, pick your hack vector, break in
 - **Progression systems** — XP & levels (perks per level), skill tracks (SQL / social / zero-day), reputation & titles (from *Retired DevOps* to *CEO of Unemployment*), 28 achievements (some hidden), career records.
 - **Factions** — NullSec, the Syndicate, or going solo — each with exclusive missions, perks and reputation.
 - **Economy** — shop upgrades (CPU/GPU/RAM/VPN/VPS/botnet), a fake darknet with programs (rootkits, sniffers, proxy chains…) and scams, PUPPYCOIN mining, passive income, a **fluctuating market** (program prices and hot dossiers re-roll daily).
+- **The Drip ladder (Saints Row style)** — 6 bling items (neon underglow, gold-plated Frank, holographic waifu projector, BASS system, villain throne, hacker cape) that feed **style ranks** with real perks: bigger loot (up to +12%), Jerry's respect (shop discount), and new titles from *No Drip* to *Legend of Drip*. Flex daily with `flex` to turn drip into reputation — and try not to shake the walls (the BASS system adds heat).
 - **Deep systems** — a network map (`net`), **backdoors** on hacked hosts (silent revisits, sold as access, burned by raids), **rival hackers** who snipe missions, a **crew** with daily salaries and passive perks, **Frank's filesystem** (`ls`/`cat`/`write`), an enriched **legend** screen with your alignment journey, and **prestige** (reset the grind for a permanent income boost).
 - **JSON mods** — drop custom mission files in `mods/` and they're added to the pool at startup (see `mods/README.md`).
 - **Heat & consequences** — cops, bribes, lay-low periods, random events (electricity bills, landlords, neighbors who "just need IT help").
@@ -66,6 +67,7 @@ Open http://localhost:3000, click the lock screen, pick your hacker handle, and 
 | `market` | Today's darknet prices: hot programs & scandal dossiers |
 | `ls` / `cat` / `write` | Explore Frank's little filesystem |
 | `prestige` | Reset the grind for a permanent +10% income boost |
+| `flex` | Show off your drip — style ranks turn into reputation (once a day) |
 
 Type `help` in-game for the full list. **Tab autocompletes** and Enter runs.
 

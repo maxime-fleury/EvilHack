@@ -94,7 +94,7 @@ export function renderStats(state, actions) {
     `<div class="panel-card">
        <div class="row text-center">
          <div class="col-6"><div class="k">${L_.money}</div><div class="v big-stat" style="color:#fbbf24">${money(state.money)}</div></div>
-         <div class="col-6"><div class="k">${L_.style}</div><div class="v big-stat" style="color:#c084fc">${state.style}</div></div>
+         <div class="col-6"><div class="k">${L_.style}</div><div class="v big-stat" style="color:#c084fc">${state.style}</div><div class="v" style="font-size:.62rem;color:#c084fc">✦ ${esc(state.styleTitle || "No Drip")}</div></div>
          <div class="col-6 mt-2"><div class="k">${L_.rep}</div><div class="v">${state.rep} / 100</div>
            <div class="pbar"><div style="width:${repPct}%"></div></div></div>
          <div class="col-6 mt-2"><div class="k">${L_.heat}</div><div class="v" style="color:${heatColor}">${state.heat} / 100</div>

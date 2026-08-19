@@ -1,7 +1,7 @@
 import type { Command } from "./types";
 import { blank, dim, divider, err, info, money, ok, warn, title, fmtMoney } from "../output";
 import { itemById, shopLines } from "../shop";
-import { langOf, shopDiscount, addXp } from "../engine";
+import { langOf, shopDiscount, addXp, blingOf } from "../engine";
 import { t } from "../i18n";
 
 export const buyCmd: Command = {
@@ -41,7 +41,8 @@ export const buyCmd: Command = {
     }
     if (it.slot === "misc") {
       const key = it.id as "rgb" | "chair" | "toaster" | "cam";
-      if (g[key]) return { lines: [warn(t(lang, "shop.oneIsEnough", { name: it.name }))], minutes: 0 };
+      const bling = blingOf(g);
+      if (g[key] || bling.includes(it.id)) return { lines: [warn(t(lang, "shop.oneIsEnough", { name: it.name }))], minutes: 0 };
     }
     g.money -= price;
     const lines = [ok(t(lang, "shop.purchased", { name: it.name })), money(t(lang, "shop.balance", { price: fmtMoney(price), bal: fmtMoney(g.money) }))];
@@ -61,19 +62,29 @@ export const buyCmd: Command = {
     if (it.price >= 400) g.flags.aiReact = "big_purchase";
     if (it.slot === "misc") {
       const key = it.id as "rgb" | "chair" | "toaster" | "cam";
-      g[key] = 1;
-      if (it.id === "rgb") {
-        g.style += 50;
-        lines.push(info(t(lang, "shop.rgb")));
-      } else if (it.id === "chair") {
-        g.style += 30;
-        lines.push(info(t(lang, "shop.chair")));
-      } else if (it.id === "toaster") {
-        g.heat += 5;
-        lines.push(warn(t(lang, "shop.toaster")));
-      } else if (it.id === "cam") {
-        g.style -= 5;
-        lines.push(dim(t(lang, "shop.cam")));
+      const BLING_STYLE: Record<string, number> = { neon: 60, gold: 120, holo: 90, bass: 80, throne: 150, cape: 50 };
+      const BLING_HEAT: Record<string, number> = { neon: 4, bass: 15 };
+      if (it.id in BLING_STYLE) {
+        g.flags.bling = [...blingOf(g), it.id];
+        g.style += BLING_STYLE[it.id];
+        g.heat += BLING_HEAT[it.id] || 0;
+        lines.push(info(t(lang, "shop.bling", { id: it.id })));
+        if (BLING_HEAT[it.id]) lines.push(warn(t(lang, "shop.blingHeat", { h: BLING_HEAT[it.id] })));
+      } else {
+        g[key] = 1;
+        if (it.id === "rgb") {
+          g.style += 50;
+          lines.push(info(t(lang, "shop.rgb")));
+        } else if (it.id === "chair") {
+          g.style += 30;
+          lines.push(info(t(lang, "shop.chair")));
+        } else if (it.id === "toaster") {
+          g.heat += 5;
+          lines.push(warn(t(lang, "shop.toaster")));
+        } else if (it.id === "cam") {
+          g.style -= 5;
+          lines.push(dim(t(lang, "shop.cam")));
+        }
       }
     }
     addXp(g, 5, lines);
@@ -125,6 +136,10 @@ export const invCmd: Command = {
     if (g.chair) misc.push("Gamer Chair");
     if (g.toaster) misc.push("Crypto Toaster");
     if (g.cam) misc.push("Security Camera (for the cat)");
+    for (const id of blingOf(g)) {
+      const names: Record<string, string> = { neon: "Neon Underglow", gold: "Gold-Plated Frank", holo: "Holo Anime Projector", bass: "Certified BASS", throne: "Throne of Villainy", cape: "Hacker Cape" };
+      if (names[id]) misc.push(names[id]);
+    }
     lines.push(dim(t(lang, "inv.lifestyle", { l: misc.length ? misc.join(", ") : t(lang, "inv.nothing") })));
     lines.push(blank);
     lines.push(dim(t(lang, "inv.upgrade")));

@@ -27,6 +27,7 @@ import { marketCmd } from "./market";
 import { lsCmd, catCmd, writeCmd } from "./files";
 import { legendCmd } from "./legend";
 import { prestigeCmd } from "./prestige";
+import { flexCmd } from "./flex";
 
 const COMMANDS: Command[] = [
   helpCmd,
@@ -72,6 +73,7 @@ const COMMANDS: Command[] = [
   writeCmd,
   legendCmd,
   prestigeCmd,
+  flexCmd,
 ];
 
 export const registry = new Map<string, Command>();
@@ -120,7 +122,7 @@ export function complete(line: string): string[] {
   if (verb === "coin") return ["price", "buy", "sell", "status"].filter((s) => s.startsWith(prefix));
   if (verb === "settings") return ["set"].filter((s) => s.startsWith(prefix));
   if (verb === "buy" || verb === "shop") {
-    return ["cpu1", "cpu2", "cpu3", "cpu4", "gpu1", "gpu2", "gpu3", "gpu4", "ram1", "ram2", "ram3", "vpn1", "vpn2", "vpn3", "bot1", "bot2", "vps1", "vps2", "vps3", "exp1", "exp2", "exp3", "rgb", "chair", "toaster", "cam"].filter((s) => s.startsWith(prefix));
+    return ["cpu1", "cpu2", "cpu3", "cpu4", "gpu1", "gpu2", "gpu3", "gpu4", "ram1", "ram2", "ram3", "vpn1", "vpn2", "vpn3", "bot1", "bot2", "vps1", "vps2", "vps3", "exp1", "exp2", "exp3", "rgb", "chair", "toaster", "cam", "neon", "gold", "holo", "bass", "throne", "cape"].filter((s) => s.startsWith(prefix));
   }
   return [];
 }

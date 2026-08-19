@@ -26,7 +26,8 @@ function updateNavbar(s) {
   $("stat-rep").textContent = "rep " + Math.round(s.rep);
   $("stat-heat").textContent = "heat " + Math.round(s.heat);
   $("stat-heat").style.color = s.heat >= 60 ? "#ef4444" : s.heat >= 35 ? "#eab308" : "";
-  $("stat-style").textContent = "style " + s.style;
+  $("stat-style").textContent = "✦ " + (s.styleTitle || "No Drip") + " " + s.style;
+  $("stat-style").title = "style rank " + (s.styleRank ?? 0);
   const hatEl = $("stat-hat");
   if (hatEl) {
     const m = Math.round(s.morality ?? 25);

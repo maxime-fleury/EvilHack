@@ -53,6 +53,13 @@ export const SHOP: ShopItem[] = [
   { id: "chair", slot: "misc", name: "Gamer Chair", price: 520, desc: { en: "It's a racing seat with wheels. You are not a racer. You are a hacker. It helps somehow.", fr: "C'est un siège de course à roulettes. Vous n'êtes pas un pilote. Vous êtes un hacker. Ça aide, d'une certaine façon." }, effect: { en: "+style", fr: "+style" } },
   { id: "toaster", slot: "misc", name: "Crypto Toaster", price: 380, desc: { en: "Mines crypto while toasting bread. The bread comes out crypto-flavored.", fr: "Mine de la crypto en grillant le pain. Le pain ressort avec un goût de crypto." }, effect: { en: "+mining, +heat", fr: "+minage, +chaleur" } },
   { id: "cam", slot: "misc", name: "Security Camera (for the cat)", price: 150, desc: { en: "You don't have a cat. You bought the camera anyway. It watches the empty room.", fr: "Vous n'avez pas de chat. Vous avez acheté la caméra quand même. Elle surveille la pièce vide." }, effect: { en: "-style", fr: "-style" } },
+  // Bling (Saints Row drip) — stored in flags.bling
+  { id: "neon", slot: "misc", name: "Neon Underglow", price: 650, desc: { en: "Purple LEDs under the desk AND the PC. The neighbors complain about the glow. Worth it.", fr: "Des LED violettes sous le bureau ET le PC. Les voisins se plaignent de la lueur. Ça vaut le coup." }, effect: { en: "+style, +heat", fr: "+style, +chaleur" } },
+  { id: "gold", slot: "misc", name: "Gold-Plated Frank", price: 2500, requiresRep: 3, desc: { en: "You dipped Frank's case in gold. He beeps differently now. Regally. He knows he's better than you.", fr: "Vous avez plongé la coque de Frank dans l'or. Il bipe différemment maintenant. Majestueusement. Il sait qu'il vous est supérieur." }, effect: { en: "++style", fr: "++style" } },
+  { id: "holo", slot: "misc", name: "Holographic Anime Projector", price: 900, desc: { en: "A floating anime waifu in your room, 24/7. She cheers you on during hacks. She's also why you keep missing.", fr: "Une waifu anime flottante dans ta chambre, 24h/24. Elle t'encourage pendant les hacks. C'est aussi pour ça que tu rates tes coups." }, effect: { en: "+style, -efficiency", fr: "+style, -efficacité" } },
+  { id: "bass", slot: "misc", name: "Certified BASS System", price: 750, desc: { en: "Two subwoofers. The walls shake. The neighbors file a complaint. The complaint shakes too.", fr: "Deux caissons de basse. Les murs tremblent. Les voisins portent plainte. La plainte tremble aussi." }, effect: { en: "+style, +heat", fr: "+style, +chaleur" } },
+  { id: "throne", slot: "misc", name: "Throne of Cyber-Villainy", price: 5000, requiresRep: 6, desc: { en: "A leather throne with RGB stitching and a cup holder. Villains don't use cup holders. You're not a villain. You're a legend.", fr: "Un trône en cuir avec coutures RGB et un porte-gobelet. Les méchants n'utilisent pas de porte-gobelet. T'es pas un méchant. T'es une légende." }, effect: { en: "+++style", fr: "+++style" } },
+  { id: "cape", slot: "misc", name: "Hacker Cape", price: 400, desc: { en: "A black cape with a hood. You wear it at home, alone. It adds +50 style and -100% social life.", fr: "Une cape noire avec capuche. Tu la portes chez toi, seul. Elle ajoute +50 style et -100% de vie sociale." }, effect: { en: "+style", fr: "+style" } },
 ];
 
 export function itemById(id: string): ShopItem | undefined {
@@ -83,7 +90,8 @@ export function shopSnapshot(g: Record<string, any>, lang: Lang): ShopSnapshotIt
     } else if (it.slot === "exploit" && it.id_exp) {
       owned = (g.exploits as string[]).includes(it.id_exp);
     } else if (it.slot === "misc") {
-      owned = !!g[it.id];
+      const bling = (g.flags?.bling as string[]) || [];
+      owned = bling.includes(it.id) || !!g[it.id];
     }
     return {
       id: it.id,
@@ -111,7 +119,7 @@ export function shopLines(lang: Lang): Line[] {
     { label: { en: "VPS", fr: "VPS" }, ids: ["vps1", "vps2", "vps3"] },
     { label: { en: "Botnet", fr: "Botnet" }, ids: ["bot1", "bot2"] },
     { label: { en: "Software", fr: "Logiciels" }, ids: ["exp1", "exp2", "exp3"] },
-    { label: { en: "Lifestyle", fr: "Style de vie" }, ids: ["rgb", "chair", "toaster", "cam"] },
+    { label: { en: "Lifestyle", fr: "Style de vie" }, ids: ["rgb", "chair", "toaster", "cam", "neon", "gold", "holo", "bass", "throne", "cape"] },
   ];
   for (const g of groups) {
     out.push(divider(pick(lang, g.label)));

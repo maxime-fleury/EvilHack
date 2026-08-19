@@ -1,7 +1,7 @@
 import type { Line } from "./output";
 import { dim, info, warn } from "./output";
 import type { Game } from "./engine";
-import { hatBand, hatLabel } from "./engine";
+import { hatBand, hatLabel, styleRank, styleTitle } from "./engine";
 import type { Bilingual, Lang } from "./i18n";
 import { pick } from "./i18n";
 
@@ -66,6 +66,7 @@ const AI_REACT_DESC: Record<string, Bilingual> = {
   first_hack: { en: "committed his very first hack", fr: "a commis son tout premier hack" },
   vps_bought: { en: "rented a VPS server for parallel ops", fr: "a loué un serveur VPS pour des ops en parallèle" },
   morality: { en: "just crossed a moral line — his hat alignment changed", fr: "vient de franchir une ligne morale — son alignement a changé" },
+  style_rank: { en: "leveled up his style rank — new drip title unlocked", fr: "a monté de rang de style — nouveau titre de drip débloqué" },
 };
 
 /** Default AI persona, per language. A custom prompt (flags.aiprompt) overrides it. */
@@ -182,9 +183,10 @@ function gameDigest(g: Game, lang: Lang): string {
   const recent = g.logs.slice(-4).map((l) => l.text).join("; ");
   const hh = String(Math.floor(g.minutes / 60) % 24).padStart(2, "0");
   const mm = String(g.minutes % 60).padStart(2, "0");
+  const styleT = styleTitle(lang, styleRank(g));
   const fr = lang === "fr"
-    ? `Jour ${g.day} (${hh}:${mm}), argent ${money}, réputation ${g.rep}, chaleur ${g.heat}, style ${g.style}. Matos : ${gear}. Faction : ${faction}. ${jobs}. Missions actives/offertes : ${missions}. Activité récente : ${recent || "rien"}.`
-    : `Day ${g.day} (${hh}:${mm}), money ${money}, rep ${g.rep}, heat ${g.heat}, style ${g.style}. Gear: ${gear}. Faction: ${faction}. ${jobs}. Missions active/offered: ${missions}. Recent activity: ${recent || "nothing"}.`;
+    ? `Jour ${g.day} (${hh}:${mm}), argent ${money}, réputation ${g.rep}, chaleur ${g.heat}, style ${g.style} (titre « ${styleT} »). Matos : ${gear}. Faction : ${faction}. ${jobs}. Missions actives/offertes : ${missions}. Activité récente : ${recent || "rien"}.`
+    : `Day ${g.day} (${hh}:${mm}), money ${money}, rep ${g.rep}, heat ${g.heat}, style ${g.style} (title "${styleT}"). Gear: ${gear}. Faction: ${faction}. ${jobs}. Missions active/offered: ${missions}. Recent activity: ${recent || "nothing"}.`;
   return `\n\n[GAME STATE — reference this for your replies] ${fr}`;
 }
 
@@ -275,6 +277,9 @@ function contextHint(g: Game): Bilingual | null {
   }
   if (g.vps === 0 && g.money > 400 && g.day > 3) {
     return { en: "You've got money burning a hole in your pocket, Dave~ a VPS means parallel hacks AND less heat. Just saying. 'shop'.", fr: "L'argent te brûle les poches, Dave~ un VPS = hacks en parallèle ET moins de chaleur. Je dis ça, je dis rien. « shop »." };
+  }
+  if (g.style < 50 && g.money > 800 && g.day > 4) {
+    return { en: "Dave. Dave. You're rich and you dress like a toaster repairman~ 'shop' → buy some drip (neon, cape, whatever). Style pays for itself: bigger payouts, Jerry's respect. You're embarrassing Frank.", fr: "Dave. Dave. T'es riche et tu t'habilles comme un réparateur de grille-pain~ « shop » → achète du drip (neon, cape, peu importe). Le style se rentabilise : meilleurs paiements, le respect de Jerry. Tu fais honte à Frank." };
   }
   if (g.missions.filter((m) => m.status === "offered").length === 0 && g.rep >= 5 && g.jobs.length === 0) {
     return { en: "Your missions board is empty~ run 'missions offer' to refresh it. Or keep staring at Frank. He stares back.", fr: "Ton tableau de missions est vide~ tape « missions offer » pour le rafraîchir. Ou continue de fixer Frank. Il te fixe aussi." };
@@ -420,6 +425,7 @@ const REACT_CURATED: Record<string, Bilingual> = {
   first_hack: { en: "FIRST BLOOD~! Your first hack, Dave. I'm so proud I might need a moment. (Frank already had his moment. It was a long beep.)", fr: "PREMIER SANG~! Ton premier hack, Dave. Je suis si fière que je vais avoir besoin d'un moment. (Frank a déjà eu le sien. Un long bip.)" },
   vps_bought: { en: "A VPS, ooh la la~ parallel crimes AND less heat? You're becoming a professional. Frank upgraded his fan. He believes in you now.", fr: "Un VPS, oh là là~ des crimes en parallèle ET moins de chaleur ? Tu deviens un pro. Frank a amélioré son ventilateur. Il croit en toi maintenant." },
   morality: { en: "Ohh~ look at you, a real {hat} now. Frank is… adjusting his opinion of you. Keep it up and we'll need a bigger moral compass~", fr: "Ohh~ regarde-toi, un vrai {hat} maintenant. Frank… ajuste son opinion sur toi. Continue comme ça et il faudra une boussole morale plus grande~" },
+  style_rank: { en: "Ohh~ new drip, Dave~? Look at you, actually developing taste. Frank beeped in approval. That's his highest form of compliment. Don't let it go to your head. (It will.)", fr: "Ohh~ du nouveau drip, Dave~? Regarde-toi, tu développes du goût. Frank a bipé d'approbation. C'est son plus grand compliment. Ça va te monter à la tête. (Ça va.)" },
 };
 
 /** Used by /api/chat — the user talks to the AI in the Chat panel. */

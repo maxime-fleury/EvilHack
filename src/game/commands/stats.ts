@@ -1,6 +1,6 @@
 import type { Command } from "./types";
 import { blank, dim, divider, info, money, ok, warn, title, fmtMoney, fmtClock } from "../output";
-import { cpuPower, miningRate, parallelSlots, heatMult, hackMinutes, snapshot, langOf, skillLevel, factionRep, careerOf, xpOf, levelOf, xpIntoLevel, xpForNext, moralityOf, hatBand, hatLabel } from "../engine";
+import { cpuPower, miningRate, parallelSlots, heatMult, hackMinutes, snapshot, langOf, skillLevel, factionRep, careerOf, xpOf, levelOf, xpIntoLevel, xpForNext, moralityOf, hatBand, hatLabel, styleRank, styleTitle, styleMult, styleDiscount } from "../engine";
 import { ACHIEVEMENTS } from "../achievements";
 import { t } from "../i18n";
 
@@ -18,6 +18,11 @@ export const statsCmd: Command = {
     lines.push(dim(`   ${fmtClock(g.day, g.minutes)}`));
     const hot = g.heat >= 60 ? warn(`Heat: ${g.heat} — you're on everyone's radar!`) : g.heat >= 35 ? warn(`Heat: ${g.heat}`) : ok(`Heat: ${g.heat}`);
     lines.push(money(`   Money: ${fmtMoney(g.money)}    Rep: ${g.rep}    Style: ${g.style}`));
+    const sRank = styleRank(g);
+    const sTitle = styleTitle(lang, sRank);
+    const thresholds = [0, 50, 150, 300, 500, 800, 1200];
+    const nextStyle = thresholds[sRank + 1];
+    lines.push(dim(t(lang, "stats.styleLine", { title: sTitle, r: sRank, mult: `+${Math.round((styleMult(g) - 1) * 100)}%`, disc: `${Math.round((1 - styleDiscount(g)) * 100)}%`, next: nextStyle ? `${nextStyle - g.style}` : "MAX" })));
     lines.push(hot);
     lines.push(dim(t(lang, "stats.title", { title: g.titles[g.titles.length - 1] || s.title })));
     lines.push(dim(t(lang, "hat.bar", { label: hatLabel(lang, hatBand(g)), m: moralityOf(g) })));

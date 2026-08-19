@@ -2,7 +2,7 @@ import type { Command } from "./types";
 import type { Line } from "../output";
 import { blank, dim, divider, err, info, money, ok, title, warn, fmtMoney } from "../output";
 import { templateById, ensureOffers, missionTitle, missionFlavor } from "../missions";
-import { addNews, logEvent, langOf, addFactionRep, trackEarned, addXp, shiftMorality } from "../engine";
+import { addNews, logEvent, langOf, addFactionRep, trackEarned, addXp, shiftMorality, styleMult } from "../engine";
 import { t } from "../i18n";
 import { pick } from "../i18n";
 import { maybeSnipe } from "./rivals";
@@ -70,7 +70,7 @@ export const missionsCmd: Command = {
           }
           m.status = "done";
           if (!g.flags.firstDelivery) g.flags.firstDelivery = true;
-          const payout = m.payout + (opt.pay || 0);
+          const payout = Math.round((m.payout + (opt.pay || 0)) * styleMult(g));
           g.money += payout;
           trackEarned(g, payout);
           g.rep = Math.max(0, g.rep + m.rep + (opt.rep || 0));
@@ -121,18 +121,18 @@ export const missionsCmd: Command = {
 
       m.status = "done";
       if (!g.flags.firstDelivery) g.flags.firstDelivery = true;
-      let payout = m.payout;
-      g.money += m.payout;
-      trackEarned(g, m.payout);
+      let payout = Math.round(m.payout * styleMult(g));
+      g.money += payout;
+      trackEarned(g, payout);
       g.rep += m.rep;
       g.style += m.style;
       g.heat += m.heat;
       const titleTxt = missionTitle(lang, m.template);
       lines.push(title(t(lang, "mis.complete", { title: titleTxt })));
-      lines.push(money(t(lang, "mis.reward", { money: `+${fmtMoney(m.payout)}`, r: m.rep, s: m.style })));
+      lines.push(money(t(lang, "mis.reward", { money: `+${fmtMoney(payout)}`, r: m.rep, s: m.style })));
       // early delivery bonus: 10% if at least a full day ahead of the deadline
       if (m.deadline_day && g.day < m.deadline_day - 1) {
-        const bonus = Math.round(m.payout * 0.1);
+        const bonus = Math.round(payout * 0.1);
         g.money += bonus;
         trackEarned(g, bonus);
         payout += bonus;

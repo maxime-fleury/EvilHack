@@ -6,7 +6,7 @@ import type { MissionRow } from "./missions";
 import { failMission, templateById, ensureOffers, missionTitle, MISSION_TEMPLATES } from "./missions";
 import { ACHIEVEMENTS } from "./achievements";
 import { ARCS, arcState, isArcActive, isArcDone } from "./arcs";
-import type { Lang } from "./i18n";
+import type { Bilingual, Lang } from "./i18n";
 import { pick, t } from "./i18n";
 import { registry } from "./commands/registry";
 import { resetDb, switchSlot, getDb, currentSlot } from "../db";
@@ -85,7 +85,61 @@ export function hasProgram(g: Game, id: string): boolean {
 
 /** The RGB strip looks great but costs efficiency: -10% while it's on. */
 export function rgbPenalty(g: Game): number {
-  return g.rgb ? 0.9 : 1;
+  let m = g.rgb ? 0.9 : 1;
+  if (blingOf(g).includes("holo")) m *= 0.95; // the holographic anime girls are distracting
+  return m;
+}
+
+// ── Style ranks (the Saints Row drip ladder) ───────────────────────────────
+
+const STYLE_RANKS = [0, 50, 150, 300, 500, 800, 1200];
+
+/** 0 (no drip) → 6 (legend). Drives titles, payout bonus and shop discount. */
+export function styleRank(g: Game): number {
+  let r = 0;
+  for (let i = 0; i < STYLE_RANKS.length; i++) if (g.style >= STYLE_RANKS[i]) r = i;
+  return r;
+}
+
+export function styleTitle(lang: Lang, rank: number): string {
+  const T: Record<number, Bilingual> = {
+    0: { en: "No Drip", fr: "Zéro Style" },
+    1: { en: "Drip Adjacent", fr: "Drip Adjacent" },
+    2: { en: "Certified Flexer", fr: "Flexeur Certifié" },
+    3: { en: "Icon of Style", fr: "Icône de Style" },
+    4: { en: "Darknet Fashion King", fr: "Roi de la Mode du Darknet" },
+    5: { en: "The Unstoppable Flex", fr: "Le Flex Imparable" },
+    6: { en: "Legend of Drip", fr: "Légende du Drip" },
+  };
+  return pick(lang, T[Math.min(rank, 6)]);
+}
+
+/** Payout multiplier from your drip: +2% per rank (max +12%). */
+export function styleMult(g: Game): number {
+  const r = styleRank(g);
+  return 1 + (r >= 1 ? r * 0.02 : 0);
+}
+
+/** Jerry respects the drip: an extra shop discount at the top ranks. */
+export function styleDiscount(g: Game): number {
+  const r = styleRank(g);
+  return r >= 5 ? 0.9 : r >= 3 ? 0.95 : 1;
+}
+
+/** Fires after a command that changed style — announces rank-ups. */
+export function checkStyleRank(g: Game, out: Line[]): void {
+  const r = styleRank(g);
+  const prev = (g.flags.styleRank as number) || 0;
+  if (r > prev) {
+    g.flags.styleRank = r;
+    g.flags.aiReact = "style_rank";
+    out.push(ok(t(langOf(g), "style.rankUp", { title: styleTitle(langOf(g), r), s: g.style })));
+  }
+}
+
+/** Bling items live in flags (no schema change needed). */
+export function blingOf(g: Game): string[] {
+  return (g.flags.bling as string[]) || [];
 }
 
 export function cpuPower(g: Game): number {
@@ -399,10 +453,11 @@ export function addFactionRep(g: Game, branch: string, n: number, out: Line[]): 
   }
 }
 
-/** Jerry's loyalty discount (10%) once your faction trusts you. */
+/** Jerry's loyalty discount (10%) once your faction trusts you — and he respects the drip. */
 export function shopDiscount(g: Game): number {
   const branch = (g.flags.branch as string) || "";
-  return branch && factionRep(g, branch) >= 10 ? 0.9 : 1;
+  const base = branch && factionRep(g, branch) >= 10 ? 0.9 : 1;
+  return base * styleDiscount(g);
 }
 
 // ── Career record ──────────────────────────────────────────────────────────
@@ -1273,6 +1328,7 @@ export function resolveHack(
     (0.7 + Math.random() * 0.6) *
     (isArcDone(g, "vault") ? 1.25 : 1) *
     prestigeMult(g) *
+    styleMult(g) * // the drip pays for itself
     (bd.speed < 1 ? 0.8 : 1); // silent revisit pays a bit less (no new data)
   g.money += skim;
   trackEarned(g, skim);
@@ -1486,6 +1542,7 @@ export async function resolve(g: Game, res: CmdResult): Promise<{ lines: Line[];
   addXp(g, res.baseXp ?? 1, out);
   checkArcs(g, out);
   checkAchievements(g, out);
+  checkStyleRank(g, out);
   const nudge = await maybeNudge(g, out);
   saveGame(g.db, g);
   return { lines: out, state: snapshot(g), nudge };
@@ -1499,6 +1556,8 @@ export interface State {
   rep: number;
   heat: number;
   style: number;
+  styleTitle: string;
+  styleRank: number;
   day: number;
   minutes: number;
   clock: string;
@@ -1543,6 +1602,8 @@ export function snapshot(g: Game): State {
     rep: g.rep,
     heat: g.heat,
     style: g.style,
+    styleTitle: styleTitle(lang, styleRank(g)),
+    styleRank: styleRank(g),
     day: g.day,
     minutes: g.minutes,
     clock: fmtClock(g.day, g.minutes),
