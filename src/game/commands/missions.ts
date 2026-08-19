@@ -5,6 +5,7 @@ import { templateById, ensureOffers, missionTitle, missionFlavor } from "../miss
 import { addNews, logEvent, langOf, addFactionRep, trackEarned, addXp, shiftMorality } from "../engine";
 import { t } from "../i18n";
 import { pick } from "../i18n";
+import { maybeSnipe } from "./rivals";
 
 export const missionsCmd: Command = {
   name: "missions",
@@ -165,6 +166,17 @@ export const missionsCmd: Command = {
       const after = g.missions.filter((m) => m.status === "offered").length;
       const delta = after - before;
       lines.push(info(t(lang, "mis.offers", { n: delta > 0 ? `${delta}` : t(lang, "mis.nothingNew") })));
+      // a rival can snipe the newest offer before you grab it
+      const sniper = maybeSnipe(g);
+      if (sniper) {
+        const fresh = g.missions.find((m) => m.status === "offered");
+        if (fresh) {
+          fresh.status = "failed";
+          fresh.deadline_day = null;
+          lines.push(warn(t(lang, "mis.sniped", { rival: sniper, title: missionTitle(lang, fresh.template) })));
+          addNews(g, t(lang, "mis.snipedNews", { rival: sniper, title: missionTitle(lang, fresh.template) }), "");
+        }
+      }
       lines.push(blank);
       return { lines, minutes: 2 };
     }

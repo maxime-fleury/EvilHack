@@ -15,7 +15,9 @@ Play it entirely in the terminal: scan networks, pick your hack vector, break in
 - **45+ missions** with branching stories, twists and betrayals ("MAIS NON!"), plus 3 optional side arcs with permanent stat perks.
 - **Progression systems** — XP & levels (perks per level), skill tracks (SQL / social / zero-day), reputation & titles (from *Retired DevOps* to *CEO of Unemployment*), 28 achievements (some hidden), career records.
 - **Factions** — NullSec, the Syndicate, or going solo — each with exclusive missions, perks and reputation.
-- **Economy** — shop upgrades (CPU/GPU/RAM/VPN/VPS/botnet), a fake darknet with programs (rootkits, sniffers, proxy chains…) and scams, PUPPYCOIN mining, passive income.
+- **Economy** — shop upgrades (CPU/GPU/RAM/VPN/VPS/botnet), a fake darknet with programs (rootkits, sniffers, proxy chains…) and scams, PUPPYCOIN mining, passive income, a **fluctuating market** (program prices and hot dossiers re-roll daily).
+- **Deep systems** — a network map (`net`), **backdoors** on hacked hosts (silent revisits, sold as access, burned by raids), **rival hackers** who snipe missions, a **crew** with daily salaries and passive perks, **Frank's filesystem** (`ls`/`cat`/`write`), an enriched **legend** screen with your alignment journey, and **prestige** (reset the grind for a permanent income boost).
+- **JSON mods** — drop custom mission files in `mods/` and they're added to the pool at startup (see `mods/README.md`).
 - **Heat & consequences** — cops, bribes, lay-low periods, random events (electricity bills, landlords, neighbors who "just need IT help").
 - **Noro-chan** 🤖 — an optional AI sidekick (LM Studio, OpenAI-compatible endpoint) who *actually knows your game state*: money, gear, missions, recent activity. She teases you when you're stuck, celebrates your wins, mocks your losses, and remembers conversations across sessions. Fully editable persona prompt (per language).
 - **Fully bilingual** 🇫🇷🇬🇧 — switch FR/EN in the settings; commands stay in English.
@@ -52,10 +54,18 @@ Open http://localhost:3000, click the lock screen, pick your hacker handle, and 
 | `miner` / `coin` | Passive income: crypto mining & PUPPYCOIN gambling |
 | `arcs` | Optional side storylines with permanent perks |
 | `achievements` | Trophy collection (some hidden) |
-| `stats` / `career` | Your legend so far |
+| `stats` / `career` / `legend` | Your legend so far — hours, best day, alignment journey |
 | `settings` | Theme, language, AI persona, server URL |
 | `tutorial` | Replayable guided tutorial (8 chapters) |
 | `save` / `slots` / `reset` | Save slots & fresh starts |
+| `net` | The network map: your gear, your routes, what's in reach |
+| `backdoor <target>` | Plant persistent access on hacked hosts (needs the rootkit) |
+| `rivals` | The other hackers in town — the scoreboard |
+| `crew` | Hire helpers: passive perks for a daily salary |
+| `frank` | Check in with Frank. He has feelings about all of this. |
+| `market` | Today's darknet prices: hot programs & scandal dossiers |
+| `ls` / `cat` / `write` | Explore Frank's little filesystem |
+| `prestige` | Reset the grind for a permanent +10% income boost |
 
 Type `help` in-game for the full list. **Tab autocompletes** and Enter runs.
 

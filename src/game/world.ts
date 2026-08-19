@@ -268,6 +268,41 @@ export interface NewsFiller {
   body: Bilingual;
 }
 
+// ── Rival hackers: they live in the same world and take jobs before you ────
+
+export interface Rival {
+  id: string;
+  name: string;
+  vibe: Bilingual;
+  /** How many missions they've "sniped" — shown in their profile. */
+  baseScore: number;
+  taunt: Bilingual;
+}
+
+export const RIVALS: Rival[] = [
+  {
+    id: "nightowl",
+    name: "N1ghtOwl",
+    vibe: { en: "A night-shift legend. Claims to have hacked a toaster. Nobody verifies.", fr: "Une légende du service de nuit. Prétend avoir piraté un grille-pain. Personne ne vérifie." },
+    baseScore: 3,
+    taunt: { en: "Saw your scan, kid. Cute. Check the leaderboard — I'm still ahead.", fr: "J'ai vu ton scan, gamin. Mignon. Regarde le classement — je suis toujours devant." },
+  },
+  {
+    id: "vladbot",
+    name: "VladBot_9000",
+    vibe: { en: "A script kiddie with a VladCoin shill account and too much confidence.", fr: "Un script kiddie avec un compte de promotion VladCoin et trop de confiance." },
+    baseScore: 6,
+    taunt: { en: "I automated your entire grind last Tuesday. While you slept. Probably.", fr: "J'ai automatisé tout ton grind mardi dernier. Pendant que tu dormais. Probablement." },
+  },
+  {
+    id: "sagemouse",
+    name: "Sage_Mouse",
+    vibe: { en: "Old-school, silent, terrifying. Nobody has ever seen them type.", fr: "À l'ancienne, silencieux, terrifiant. Personne ne les a jamais vus taper." },
+    baseScore: 9,
+    taunt: { en: "You're doing well. That's the nicest thing I've ever said. Don't make me say it again.", fr: "Tu te débrouilles bien. C'est la chose la plus gentille que j'aie jamais dite. Ne me force pas à recommencer." },
+  },
+];
+
 export const NEWS_FILLERS: NewsFiller[] = [
   { headline: { en: "Local man discovers 'sudo' works in real life", fr: "Un homme découvre que « sudo » marche dans la vraie vie" }, body: { en: "Experts are baffled. He has not been able to undo it.", fr: "Les experts sont perplexes. Il n'a pas pu annuler." } },
   { headline: { en: "Grandma Gertie's chain email reaches 1 million forwards", fr: "L'e-mail en chaîne de Mamie Gertie atteint 1 million de transferts" }, body: { en: "'It's about the community,' she says, from inside her pyramid.", fr: "« C'est une histoire de communauté », dit-elle, du sommet de sa pyramide." } },

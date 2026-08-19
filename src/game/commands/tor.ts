@@ -3,7 +3,7 @@ import type { Line } from "../output";
 import { blank, dim, divider, err, info, money, ok, warn, fmtMoney } from "../output";
 import type { Bilingual } from "../i18n";
 import { pick, t } from "../i18n";
-import { langOf } from "../engine";
+import { backdoorsOf, hasBackdoor, langOf, trackEarned, torPriceMult } from "../engine";
 
 // ── Fake darknet programs ──────────────────────────────────────────────────
 // Names stay English; descriptions are bilingual. Installed programs live in
@@ -59,9 +59,9 @@ function addProgram(g: { flags: Record<string, unknown> }, id: string) {
 
 export const torCmd: Command = {
   name: "tor",
-  usage: "tor [visit <site> | install <id>]",
-  help: "Browse the fake darknet: hidden services, programs, and scams.",
-  detail: "Connect to hidden services. 'tor visit <site>' to open one, 'tor install <id>' to buy a program at the Bazaar. Programs give real effects.",
+  usage: "tor [visit <site> | install <id> | sell <target>]",
+  help: "Browse the darknet: hidden services, programs, scams, and sold access.",
+  detail: "Connect to hidden services. 'tor visit <site>' to open one, 'tor install <id>' to buy a program at the Bazaar, 'tor sell <target>' to sell a planted backdoor as access. Program prices drift with the market.",
   run: (g, args) => {
     const lang = langOf(g);
     const sub = (args[0] || "").toLowerCase();
@@ -79,7 +79,9 @@ export const torCmd: Command = {
           lines.push(info(t(lang, "tor.progs")));
           for (const p of TOR_PROGRAMS) {
             const owned = hasProgram(g, p.id) ? " ✓" : "";
-            lines.push(info(`   ${p.name}  [${p.id}]  ${money(fmtMoney(p.price)).t}${owned}`));
+            const mult = torPriceMult(g, p.id);
+            const tag = mult > 1.25 ? warn(` ▲`).t : mult < 0.8 ? ok(` ▼`).t : "";
+            lines.push(info(`   ${p.name}  [${p.id}]  ${money(fmtMoney(Math.round(p.price * mult))).t}${tag}${owned}`));
             lines.push(dim(`     ${pick(lang, p.desc)}`));
             lines.push(dim(`     → ${pick(lang, p.effect)}`));
           }
@@ -116,6 +118,23 @@ export const torCmd: Command = {
       return { lines, minutes: 2 };
     }
 
+    if (sub === "sell") {
+      // sell a planted backdoor as access — Jerry pays, the door is gone
+      const target = args.slice(1).join(" ");
+      if (!target || !hasBackdoor(g, target)) {
+        return { lines: [err(t(lang, "tor.noBackdoor", { t: target }))], minutes: 0 };
+      }
+      const price = 150 + Math.round(Math.random() * 250);
+      g.money += price;
+      trackEarned(g, price);
+      g.flags.backdoors = backdoorsOf(g).filter((b) => b.target !== target);
+      const lines = [
+        ok(t(lang, "tor.soldAccess", { t: target, m: fmtMoney(price) })),
+        dim(t(lang, "tor.soldAccessNote")),
+      ];
+      return { lines, minutes: 5 };
+    }
+
     if (sub === "install") {
       const id = (args[1] || "").toLowerCase();
       const prog = TOR_PROGRAMS.find((p) => p.id === id);
@@ -128,10 +147,11 @@ export const torCmd: Command = {
       if (g.rep < item.repReq) {
         return { lines: [err(t(lang, "tor.needRep", { r: item.repReq, have: g.rep }))], minutes: 0 };
       }
-      if (g.money < item.price) {
-        return { lines: [err(t(lang, "tor.noMoney", { m: fmtMoney(item.price) }))], minutes: 0 };
+      const price = prog ? Math.round(item.price * torPriceMult(g, prog.id)) : item.price;
+      if (g.money < price) {
+        return { lines: [err(t(lang, "tor.noMoney", { m: fmtMoney(price) }))], minutes: 0 };
       }
-      g.money -= item.price;
+      g.money -= price;
       if (scam) {
         g.flags.scamCount = ((g.flags.scamCount as number) || 0) + 1;
         g.heat += 1;

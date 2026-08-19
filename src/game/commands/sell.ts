@@ -1,7 +1,7 @@
 import type { Command } from "./types";
 import { blank, dim, divider, err, info, money, ok, warn, fmtMoney } from "../output";
 import { getNpc, NPCS } from "../world";
-import { addNews, logEvent, langOf, addXp } from "../engine";
+import { addNews, logEvent, langOf, addXp, dossierMult } from "../engine";
 import { t } from "../i18n";
 import { pick } from "../i18n";
 
@@ -52,7 +52,8 @@ export const sellCmd: Command = {
       return { lines: [warn(t(lang, "sell.noDossier", { n: npc.name, f: c?.fragments ?? 0 }))], minutes: 0 };
     }
     if (c.sold) return { lines: [warn(t(lang, "sell.sold", { n: npc.name }))], minutes: 0 };
-    const price = Math.round(npc.juice * (1 + g.rep / 100));
+    const mult = dossierMult(g, npc.id);
+    const price = Math.round(npc.juice * (1 + g.rep / 100) * mult);
     g.money += price;
     g.style += 10;
     c.sold = 1;
@@ -64,6 +65,7 @@ export const sellCmd: Command = {
       money(t(lang, "sell.money", { m: fmtMoney(price), j: npc.juice })),
       info(`   ${pick(lang, npc.salePunchline)}`),
     ];
+    if (mult > 1) lines.push(ok(t(lang, "market.hotSell", { n: npc.name, x: Math.round(mult * 100) / 100 })));
     if (npc.id === "pierre") {
       lines.push(warn(t(lang, "sell.pierre")));
       g.rep = Math.max(0, g.rep - 5);

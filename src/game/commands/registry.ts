@@ -18,6 +18,15 @@ import { careerCmd, slotsCmd, slotCmd, poweroffCmd, rebootCmd, screensaverCmd } 
 import { achievementsCmd } from "./achievements";
 import { arcsCmd } from "./arcs";
 import { tutorialCmd } from "./tutorial";
+import { netCmd } from "./net";
+import { backdoorCmd } from "./backdoor";
+import { rivalsCmd } from "./rivals";
+import { crewCmd } from "./crew";
+import { frankCmd } from "./frank";
+import { marketCmd } from "./market";
+import { lsCmd, catCmd, writeCmd } from "./files";
+import { legendCmd } from "./legend";
+import { prestigeCmd } from "./prestige";
 
 const COMMANDS: Command[] = [
   helpCmd,
@@ -52,6 +61,17 @@ const COMMANDS: Command[] = [
   poweroffCmd,
   rebootCmd,
   screensaverCmd,
+  netCmd,
+  backdoorCmd,
+  rivalsCmd,
+  crewCmd,
+  frankCmd,
+  marketCmd,
+  lsCmd,
+  catCmd,
+  writeCmd,
+  legendCmd,
+  prestigeCmd,
 ];
 
 export const registry = new Map<string, Command>();
@@ -94,6 +114,9 @@ export function complete(line: string): string[] {
   }
   if (verb === "choose") return ["a", "b", "c"].filter((s) => s.startsWith(prefix));
   if (verb === "miner") return ["start", "stop", "status"].filter((s) => s.startsWith(prefix));
+  if (verb === "crew") return ["hire", "fire"].filter((s) => s.startsWith(prefix));
+  if (verb === "backdoor") return ["list"].filter((s) => s.startsWith(prefix));
+  if (verb === "cat" || verb === "ls") return ["/home/dave/README.txt", "/home/dave/notes.txt", "/etc/frank.conf", "/var/log/crimes.log"].filter((s) => s.toLowerCase().startsWith(prefix));
   if (verb === "coin") return ["price", "buy", "sell", "status"].filter((s) => s.startsWith(prefix));
   if (verb === "settings") return ["set"].filter((s) => s.startsWith(prefix));
   if (verb === "buy" || verb === "shop") {

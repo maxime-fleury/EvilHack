@@ -103,6 +103,7 @@ export function heatMult(g: Game): number {
   if (hasProgram(g, "rootkit")) m *= 0.95;
   if (isArcDone(g, "spectre")) m *= 0.85; // arc perk: the Spectre's shade
   m *= Math.max(0.7, 1 - levelOf(g) * 0.01); // level perk: quieter ops
+  m *= Math.max(0.7, 1 - crewPerks(g).heat); // a whisperer on the team cools traces
   return m;
 }
 
@@ -160,11 +161,195 @@ export function shiftMorality(g: Game, shift: number, out: Line[]): void {
     out.push(dim(t(lang, "hat.think", { label })));
     if (!g.flags.aiReact) g.flags.aiReact = "morality";
     logEvent(g, t(lang, "hat.log", { label }));
+    recordAlign(g, after, t(lang, "hat.why"));
   }
 }
 
 export function hatLabel(lang: Lang, band: HatBand): string {
   return t(lang, band === "white" ? "hat.white" : band === "black" ? "hat.black" : "hat.gray");
+}
+
+// ── Alignment history (for the Legend screen) ─────────────────────────────
+
+export interface AlignEvent {
+  day: number;
+  band: HatBand;
+  value: number;
+  why: string;
+}
+
+export function alignHistory(g: Game): AlignEvent[] {
+  return (g.flags.alignHistory as AlignEvent[]) || [];
+}
+
+function recordAlign(g: Game, band: HatBand, why: string) {
+  const h = alignHistory(g);
+  h.push({ day: g.day, band, value: moralityOf(g), why });
+  g.flags.alignHistory = h.slice(-30);
+}
+
+// ── Backdoors: leave an access on a hacked host ────────────────────────────
+
+export interface Backdoor {
+  target: string;
+  day: number;
+}
+
+export function backdoorsOf(g: Game): Backdoor[] {
+  return (g.flags.backdoors as Backdoor[]) || [];
+}
+
+/** True if we left an access on this host. */
+export function hasBackdoor(g: Game, target: string): boolean {
+  return backdoorsOf(g).some((b) => b.target === target);
+}
+
+/** Re-hacking a backdoored host is silent: no heat, faster, no trace news. */
+export function backdoorBonus(g: Game, target: string): { heat: number; speed: number } {
+  return hasBackdoor(g, target) ? { heat: 0, speed: 0.55 } : { heat: 1, speed: 1 };
+}
+
+/** When the heat event lands, a known backdoor can be burned. */
+export function maybeBurnBackdoor(g: Game, out: Line[]): void {
+  const bd = backdoorsOf(g);
+  if (!bd.length) return;
+  const lang = langOf(g);
+  const idx = Math.floor(Math.random() * bd.length);
+  const [victim] = bd.splice(idx, 1);
+  g.flags.backdoors = bd;
+  out.push(warn(t(lang, "backdoor.burned", { target: victim.target })));
+  logEvent(g, t(lang, "backdoor.burnedLog", { target: victim.target }));
+}
+
+// ── Market: fluctuating prices (the pattern puppycoin already uses) ────────
+
+export interface MarketPrices {
+  tor: Record<string, number>;
+  dossiers: Record<string, number>;
+  scandalDay: number;
+}
+
+export function marketOf(g: Game): MarketPrices {
+  return (g.flags.market as MarketPrices) || { tor: {}, dossiers: {}, scandalDay: 0 };
+}
+
+/** Daily price walk: tor programs and dossier values drift with the news. */
+export function walkMarket(g: Game, out: Line[]): void {
+  const m = marketOf(g);
+  const lang = langOf(g);
+  m.tor = m.tor || {};
+  m.dossiers = m.dossiers || {};
+  const drift = (base: number) => Math.max(0.6, Math.min(1.6, base * (0.85 + Math.random() * 0.35)));
+  // tor programs drift around their base price
+  for (const p of ["sniffer", "proxychain", "miner2", "wardialer", "rootkit"]) {
+    m.tor[p] = drift(m.tor[p] || 1);
+  }
+  // a random NPC is "in the news" today — their dossier is worth 2×
+  const npcIds = NPCS.map((n) => n.id);
+  const lucky = npcIds[Math.floor(Math.random() * npcIds.length)];
+  m.scandalDay = g.day;
+  m.dossiers = {};
+  for (const id of npcIds) m.dossiers[id] = id === lucky ? 2 : 1;
+  g.flags.market = m;
+  const npc = getNpc(lucky);
+  if (npc) {
+    out.push(dim(t(lang, "market.scandal", { npc: npc.name })));
+    addNews(g, t(lang, "market.scandalHead", { npc: npc.name }), t(lang, "market.scandalBody", { npc: npc.name }));
+  }
+}
+
+/** Tor program price multiplier today (base × market). */
+export function torPriceMult(g: Game, id: string): number {
+  const m = marketOf(g);
+  return (m.tor && m.tor[id]) || 1;
+}
+
+/** Dossier sale multiplier today (a scandal makes one NPC's file hot). */
+export function dossierMult(g: Game, npcId: string): number {
+  const m = marketOf(g);
+  return (m.dossiers && m.dossiers[npcId]) || 1;
+}
+
+// ── Crew: hire helpers with salaries and passive perks ─────────────────────
+
+export interface CrewMember {
+  id: string;
+  hiredDay: number;
+}
+
+export function crewOf(g: Game): CrewMember[] {
+  return (g.flags.crew as CrewMember[]) || [];
+}
+
+export function crewPerks(g: Game): { mining: number; heat: number; fragments: number; rep: number } {
+  const p = { mining: 0, heat: 0, fragments: 0, rep: 0 };
+  for (const m of crewOf(g)) {
+    if (m.id === "scriptkiddie") p.mining += 2;
+    if (m.id === "socialite") p.heat += 0.15;
+    if (m.id === "whisper") p.fragments += 0.25;
+    if (m.id === "recruiter") p.rep += 1;
+  }
+  return p;
+}
+
+/** Daily crew salaries — deducted at each day rollover. Members quit if broke. */
+export function payCrew(g: Game, out: Line[]): void {
+  const members = crewOf(g);
+  if (!members.length) return;
+  const lang = langOf(g);
+  const SALARY: Record<string, number> = { scriptkiddie: 25, socialite: 40, whisper: 60, recruiter: 90 };
+  let total = 0;
+  for (const m of members) total += SALARY[m.id] || 0;
+  if (g.money >= total) {
+    g.money -= total;
+    out.push(dim(t(lang, "crew.paid", { m: fmtMoney(total), n: members.length })));
+  } else {
+    g.flags.crew = [];
+    g.money = Math.max(0, g.money - total);
+    out.push(warn(t(lang, "crew.quit")));
+    logEvent(g, t(lang, "crew.quitLog"));
+  }
+}
+
+// ── Prestige: reset the grind, keep the legend, earn a multiplier ──────────
+
+export function prestigeCount(g: Game): number {
+  return (g.flags.prestiges as number) || 0;
+}
+
+export function prestigeMult(g: Game): number {
+  return 1 + prestigeCount(g) * 0.1; // +10% income per prestige
+}
+
+// ── Frank's filesystem: a tiny explorable home dir ─────────────────────────
+
+export interface FsEntry {
+  content: string;
+  // directories are implicit by path prefix
+}
+
+export function fsOf(g: Game): Record<string, string> {
+  return (g.flags.fs as Record<string, string>) || {};
+}
+
+/** Prepopulate Frank's disk with fun files on a fresh save. */
+export function seedFs(g: Game) {
+  const fs = fsOf(g);
+  if (Object.keys(fs).length) return;
+  const fr = langOf(g) === "fr";
+  fs["/home/dave/README.txt"] = fr
+    ? "Bienvenue sur Frank. L'ordinateur du chômage.\nFichiers utiles :\n  /home/dave/notes.txt — vos notes\n  /etc/frank.conf — la configuration de Frank\n  /var/log/crimes.log — ne rien voir ici\nÉcrivez avec : write <chemin> <texte>"
+    : "Welcome to Frank. The unemployment machine.\nUseful files:\n  /home/dave/notes.txt — your notes\n  /etc/frank.conf — Frank's config\n  /var/log/crimes.log — see nothing here\nWrite with: write <path> <text>";
+  fs["/home/dave/notes.txt"] = fr
+    ? "(vide)\nIdées de crimes :\n- scanner le réseau\n- accepter une mission\n- acheter un GPU pour miner"
+    : "(empty)\nCrime ideas:\n- scan the network\n- take a mission\n- buy a GPU to mine";
+  fs["/etc/frank.conf"] = fr
+    ? "# Configuration de Frank v0.1\nram=512MB\nsoul=present (de justesse)\nfans=1 (bruyant)\n# ne pas modifier"
+    : "# Frank config v0.1\nram=512MB\nsoul=present (barely)\nfans=1 (loud)\n# do not edit";
+  fs["/var/log/crimes.log"] = fr
+    ? "(fichier vide. Étrangement vide. Suspicieusement vide.)"
+    : "(empty file. Strangely empty. Suspiciously empty.)";
+  g.flags.fs = fs;
 }
 
 // ── Skills (rise with use) ─────────────────────────────────────────────────
@@ -513,7 +698,7 @@ export function loadGame(db: Database): Game {
     .map((r) => ({ ...(r as object), payload: JSON.parse((r as { payload: string }).payload || "{}") })) as JobRow[];
   const logs = stmt(db, "SELECT * FROM log ORDER BY id DESC LIMIT 400").all() as unknown as LogRow[];
   logs.reverse();
-  return {
+  const g: Game = {
     db,
     name: p.name,
     money: p.money,
@@ -541,6 +726,13 @@ export function loadGame(db: Database): Game {
     jobs,
     logs,
   };
+  // older saves predate Frank's filesystem — seed it so `ls` works everywhere
+  if (!g.flags.fs || !Object.keys(g.flags.fs as object).length) seedFs(g);
+  // and the market prices (pre-market saves start at base prices)
+  if (!g.flags.market) {
+    g.flags.market = { tor: { sniffer: 1, proxychain: 1, miner2: 1, wardialer: 1, rootkit: 1 }, dossiers: {}, scandalDay: 0 };
+  }
+  return g;
 }
 
 export function newGame(db: Database): Game {
@@ -607,6 +799,12 @@ export function newGame(db: Database): Game {
       firstDelivery: false,
       identified: false,
       arcs: {},
+      alignHistory: [],
+      backdoors: [],
+      crew: [],
+      market: { tor: { sniffer: 1, proxychain: 1, miner2: 1, wardialer: 1, rootkit: 1 }, dossiers: {}, scandalDay: 0 },
+      prestiges: 0,
+      fs: {},
     },
     missions: [],
     contacts: [],
@@ -614,6 +812,7 @@ export function newGame(db: Database): Game {
     jobs: [],
     logs: [],
   };
+  seedFs(g);
   ensureOffers(g);
   return g;
 }
@@ -831,12 +1030,13 @@ export function tick(g: Game, minutes: number, out: Line[]) {
   const startDay = g.day;
   // mining income
   const lang = langOf(g);
-  const rate = miningRate(g);
-  const earned = g.flags.minerActive !== false ? (rate * minutes) / 60 : 0;
+  const crew = crewPerks(g);
+  const rate = miningRate(g) + crew.mining;
+  const earned = g.flags.minerActive !== false ? ((rate * minutes) / 60) * prestigeMult(g) : 0;
   g.money += earned;
   if (earned > 0.001) out.push(dim(`⛏  ${t(lang, "miner.rate", { r: fmtMoney(rate) })}: +${fmtMoney(earned)}`));
   // Gertie's daily dividend (arc perk): silent, like all passive income
-  if (isArcDone(g, "gertie")) g.money += 10 * (minutes / 1440);
+  if (isArcDone(g, "gertie")) g.money += (10 * (minutes / 1440)) * prestigeMult(g);
 
   // advance clock
   g.minutes += minutes;
@@ -856,6 +1056,10 @@ export function tick(g: Game, minutes: number, out: Line[]) {
       g.flags.career = c;
     }
     g.flags.dayEarn = 0;
+    // crew salaries come out daily
+    payCrew(g, out);
+    // the darknet market re-prices daily
+    walkMarket(g, out);
   }
 
   // random everyday-life events (bills, landlord, cops, neighbors)
@@ -994,6 +1198,8 @@ function handleHeatEvent(g: Game, out: Line[]) {
     logEvent(g, t(lang, "heat.hid"));
     if (!g.flags.aiReact) g.flags.aiReact = "laylow";
   }
+  // a raid can burn a known backdoor
+  maybeBurnBackdoor(g, out);
 }
 
 function checkMilestones(g: Game, out: Line[]) {
@@ -1060,8 +1266,14 @@ export function resolveHack(
       missionDone = true;
     }
   }
-  // cash + loot (Vault Key arc perk: +25% skim)
-  const skim = target ? target.basePayout * (0.7 + Math.random() * 0.6) * (isArcDone(g, "vault") ? 1.25 : 1) : 30 * diff;
+  // cash + loot (Vault Key arc perk: +25% skim; prestige: +10%/run; backdoor: silent)
+  const bd = backdoorBonus(g, targetName);
+  const skim =
+    (target?.basePayout ?? 30 * diff) *
+    (0.7 + Math.random() * 0.6) *
+    (isArcDone(g, "vault") ? 1.25 : 1) *
+    prestigeMult(g) *
+    (bd.speed < 1 ? 0.8 : 1); // silent revisit pays a bit less (no new data)
   g.money += skim;
   trackEarned(g, skim);
   // career record
@@ -1085,8 +1297,8 @@ export function resolveHack(
     const owned = g.exploits.filter((e) => e === "sql" || e === "social" || e === "zero");
     if (owned.length) addSkillXp(g, owned[Math.floor(Math.random() * owned.length)] as SkillId, [] as Line[]);
   }
-  // dossier fragment drop
-  const dropChance = hasProgram(g, "sniffer") ? 0.5 : 0.25;
+  // dossier fragment drop (a whisperer on the crew helps)
+  const dropChance = Math.min(0.9, (hasProgram(g, "sniffer") ? 0.5 : 0.25) + crewPerks(g).fragments);
   if (target?.loot === "info" || Math.random() < dropChance) {
     const npcId = tryDropFragment(g, target?.npcDrop);
     if (npcId) {
@@ -1096,9 +1308,9 @@ export function resolveHack(
       logEvent(g, t(lang, "hack.fraglog", { npc: npc.name }));
     }
   }
-  // heat gain (skills make you quieter)
+  // heat gain (skills make you quieter, backdoors are silent)
   const heatGain = Math.round(
-    (target?.heat ?? 4) * heatMult(g) * (target?.skill ? Math.max(0.6, 1 - skillLevel(g, target.skill) * 0.04) : 1)
+    (target?.heat ?? 4) * heatMult(g) * (target?.skill ? Math.max(0.6, 1 - skillLevel(g, target.skill) * 0.04) : 1) * bd.heat
   );
   g.heat += heatGain;
   if (heatGain > 0) out.push(dim(t(lang, "hack.heat", { h: heatGain })));
@@ -1315,6 +1527,10 @@ export interface State {
   slot: number;
   powered: boolean;
   identified: boolean;
+  backdoors: { target: string; day: number }[];
+  crew: { id: string; hiredDay: number }[];
+  prestige: number;
+  market: { tor: Record<string, number>; dossiers: Record<string, number>; scandalDay: number };
   settings: { theme: string; fontsize: string; anim: boolean; sound: boolean; lang: string };
   flags: Record<string, unknown>;
 }
@@ -1399,6 +1615,10 @@ export function snapshot(g: Game): State {
     slot: currentSlot(),
     powered: g.flags.powered !== false,
     identified: isIdentified(g),
+    backdoors: backdoorsOf(g),
+    crew: crewOf(g),
+    prestige: prestigeCount(g),
+    market: marketOf(g),
     settings: {
       theme: (g.flags.theme as string) || "green",
       fontsize: (g.flags.fontsize as string) || "md",

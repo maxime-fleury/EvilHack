@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
 import type { Line } from "./output";
 import { dim, divider, err, info, money, ok, title, warn } from "./output";
 import type { Bilingual, Lang } from "./i18n";
@@ -57,6 +59,29 @@ export interface MissionTemplate {
   deliverOptions?: DeliverOption[];
   success: Bilingual;
   fail: Bilingual;
+}
+
+/** Custom missions loaded from ./mods/*.json at startup (see index.ts). */
+export function loadModMissions(modsDir: string): MissionTemplate[] {
+  try {
+    if (!existsSync(modsDir)) return [];
+    const out: MissionTemplate[] = [];
+    for (const f of readdirSync(modsDir)) {
+      if (!f.endsWith(".json")) continue;
+      try {
+        const data = JSON.parse(readFileSync(join(modsDir, f), "utf-8"));
+        const arr = Array.isArray(data) ? data : [data];
+        for (const m of arr) {
+          if (m && m.id && m.title && m.blurb && m.success && m.fail) out.push(m as MissionTemplate);
+        }
+      } catch (e) {
+        console.error(`[mods] failed to load ${f}:`, (e as Error).message);
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
 }
 
 export const MISSION_TEMPLATES: MissionTemplate[] = [

@@ -5,6 +5,7 @@ import { loadGame, dispatch, resolve, snapshot, langOf, saveGame, isIdentified }
 import { introLines } from "./game/intro";
 import { complete, registry } from "./game/commands/registry";
 import { shopSnapshot } from "./game/shop";
+import { MISSION_TEMPLATES, loadModMissions } from "./game/missions";
 import { chatReply, aiOnline } from "./game/aichat";
 import { cmdHelp, cmdDetail } from "./game/i18n";
 
@@ -162,6 +163,14 @@ function findAvailablePort(start: number, end: number) {
     }
   }
   return null;
+}
+
+// JSON mods: drop mission files in ./mods and they're added to the pool.
+const MODS_DIR = join(process.cwd(), "mods");
+const modMissions = loadModMissions(MODS_DIR);
+if (modMissions.length) {
+  MISSION_TEMPLATES.push(...modMissions);
+  console.log(`   mods: ${modMissions.length} custom mission(s) loaded from ${MODS_DIR}`);
 }
 
 const server = findAvailablePort(MIN_PORT, MAX_PORT);
