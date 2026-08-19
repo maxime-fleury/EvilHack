@@ -19,6 +19,7 @@ const L = (lang) => ({
     dossiers: "DOSSIERS", soldTo: "vendu à The Daily Leak", sellDossier: "vendre le dossier ➤",
     noNews: "Aucun titre pour l'instant. Le monde est étrangement calme.",
     noInv: "Frank est un stock. Frank est triste.", noSoft: "aucun logiciel",
+    trophiesMax: "Tous les perks de trophées débloqués — légende accomplie.",
     shopHint: "Améliore avec <b>buy</b> dans le terminal, ou visite le faux Tor pour des programmes : <b>tor</b>.",
     commands: "COMMANDES", helpTip: "Clique sur une commande pour la remplir dans le terminal. Tape <b>help &lt;cmd&gt;</b> pour les détails. Tab complète automatiquement.",
     sTheme: "Thème", sFont: "Taille de police", sAnim: "Animations", sSound: "Sons", sVolume: "Volume", sAmbient: "Bruit ambiant", sLang: "Langue", sWall: "Fond d'écran", wallUpload: "ou importe une image locale", saved: "✓ réglages enregistrés",
@@ -43,6 +44,7 @@ const L = (lang) => ({
     dossiers: "DOSSIERS", soldTo: "sold to The Daily Leak", sellDossier: "sell dossier ➤",
     noNews: "No headlines yet. The world is suspiciously quiet.",
     noInv: "Frank is stock. Frank is sad.", noSoft: "no software",
+    trophiesMax: "All trophy perks unlocked — legend achieved.",
     shopHint: "Upgrade with <b>buy</b> in the terminal, or visit the fake Tor for programs: <b>tor</b>.",
     commands: "COMMANDS", helpTip: "Click a command to fill the terminal. Type <b>help &lt;cmd&gt;</b> for details. Tab autocompletes.",
     sTheme: "theme", sFont: "font size", sAnim: "animations", sSound: "sound", sVolume: "volume", sAmbient: "ambient hum", sLang: "language", sWall: "wallpaper", wallUpload: "or import a local image", saved: "✓ settings saved",
@@ -106,7 +108,20 @@ export function renderStats(state, actions) {
   const xpPct = lvl >= 20 ? 100 : Math.min(100, Math.round((into / span) * 100));
   const achGot = (state.achievements || []).length;
   const achTotal = state.achTotal ?? 25; // total from the server catalogue
+  const tPerks = state.trophies || { count: achGot, loot: 1, xp: 1, heat: 1, discount: 1, next: null };
+  const nextTier = tPerks.next; // { n, label } — next trophy count that unlocks a perk
   el.innerHTML =
+    (state.raidPending
+      ? `<div class="panel-card" style="border-color:#ef4444;background:#1a0a0a">
+           <div class="k" style="color:#ef4444">🕵 ${state.flags?.lang === "fr" ? "RAID — la chaleur est au max !" : "RAID — heat is maxed out!"}</div>
+           <div class="v" style="font-size:.72rem">${state.flags?.lang === "fr" ? "Un homme en costume frappe à la porte. Choisis ta réponse :" : "A man in a suit is knocking. Pick your answer:"}</div>
+           <div class="d-flex gap-2 mt-2">
+             <button class="btn-term" data-cmd="raid flee">🏃 ${state.flags?.lang === "fr" ? "Fuir" : "Flee"}</button>
+             <button class="btn-term" data-cmd="raid pay">💵 ${state.flags?.lang === "fr" ? "Payer" : "Pay"}</button>
+             <button class="btn-term" data-cmd="raid brave">😤 ${state.flags?.lang === "fr" ? "Braver" : "Brave it"}</button>
+           </div>
+         </div>`
+      : "") +
     (state.pendingChoice
       ? `<div class="panel-card" style="border-color:var(--term-warn);background:#171105">
            <div class="k" style="color:var(--term-warn)">BRANCHING POINT</div>
@@ -132,9 +147,27 @@ export function renderStats(state, actions) {
     card(kv(L_.hat, `<span style="color:${(state.morality ?? 25) >= 67 ? "#ef4444" : (state.morality ?? 25) <= 33 ? "#e0e7ff" : "#a1a1aa"}">${esc(state.hat || "gray")} · ${Math.round(state.morality ?? 25)}/100</span>`)) +
     card(kv(L_.clock, esc(state.clock))) +
     (() => {
+      const next = nextTier
+        ? `<div class="v" style="font-size:.68rem;color:var(--term-ok)">🎁 ${nextTier.n} 🏆 → ${esc(nextTier.label)}</div>`
+        : `<div class="v" style="font-size:.68rem;color:var(--term-dim)">✨ ${L_.trophiesMax}</div>`;
+      const perksHere = [
+        tPerks.loot && tPerks.loot !== 1 ? `butin ×${tPerks.loot.toFixed(2)}` : null,
+        tPerks.xp && tPerks.xp !== 1 ? `XP ×${tPerks.xp.toFixed(2)}` : null,
+        tPerks.heat && tPerks.heat !== 1 ? `heat ×${tPerks.heat.toFixed(2)}` : null,
+        tPerks.discount && tPerks.discount !== 1 ? `shop −${Math.round((1 - tPerks.discount) * 100)}%` : null,
+      ].filter(Boolean).join(" · ");
+      // progress bar toward the next trophy perk (or 100% when maxed)
+      const nextN = nextTier ? nextTier.n : achTotal;
+      const prevN = nextTier ? Math.max(0, nextTier.n - 5) : achTotal;
+      const span = Math.max(1, nextN - prevN);
+      const tPct = Math.min(100, Math.max(0, Math.round(((achGot - prevN) / span) * 100)));
       return `<div class="panel-card"><div class="k">Lv.${lvl} · ${xp} XP ${lvl < 20 ? `(${into}/${span})` : "(MAX)"}</div>` +
         `<div class="pbar"><div style="width:${xpPct}%"></div></div>` +
-        `<div class="v" style="font-size:.72rem;color:var(--term-dim)">🏆 ${achGot}/${achTotal} ${L_.trophies}</div></div>`;
+        `<div class="v" style="font-size:.72rem;color:var(--term-dim)">🏆 ${achGot}/${achTotal} ${L_.trophies}</div>` +
+        `<div class="pbar" style="height:6px;background:rgba(255,255,255,.06)"><div style="width:${tPct}%;background:#c084fc"></div></div>` +
+        (perksHere ? `<div class="v" style="font-size:.68rem;color:#fbbf24">${perksHere}</div>` : "") +
+        next +
+        `</div>`;
     })() +
     (state.laylow > 0 ? card(`<span style="color:#ef4444">${L_.laylow.replace("${d}", state.laylow)}</span>`) : "") +
     card(kv(L_.mining, `${state.mining.active ? "⛏ " + L_.active : L_.stopped} · ${money(state.mining.rate)}/hr`)) +

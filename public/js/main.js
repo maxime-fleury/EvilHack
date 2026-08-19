@@ -65,6 +65,16 @@ function updateNavbar(s) {
   $("stat-rep").textContent = "rep " + Math.round(s.rep);
   $("stat-heat").textContent = "heat " + Math.round(s.heat);
   $("stat-heat").style.color = s.heat >= 60 ? "#ef4444" : s.heat >= 35 ? "#eab308" : "";
+  // clean-streak combo — a pure bonus, never a punishment
+  const combo = s.combo || 1;
+  const comboEl = $("stat-combo");
+  if (comboEl) {
+    const fr = s.flags?.lang === "fr";
+    comboEl.textContent = `🔥 ×${combo}`;
+    comboEl.title = combo >= 3 ? (fr ? `Combo ×${combo} — butin ×${(s.comboMult || 1).toFixed(2)}` : `Streak ×${combo} — loot ×${(s.comboMult || 1).toFixed(2)}`) : (fr ? "Enchaîne des hacks propres pour un bonus" : "Chain clean hacks for a bonus");
+    comboEl.style.display = combo >= 2 ? "" : "none";
+    comboEl.style.color = combo >= 10 ? "#f59e0b" : combo >= 3 ? "#a3e635" : "";
+  }
   $("stat-style").textContent = "✦ " + (s.styleTitle || "No Drip") + " " + s.style;
   $("stat-style").title = "style rank " + (s.styleRank ?? 0);
   const hatEl = $("stat-hat");

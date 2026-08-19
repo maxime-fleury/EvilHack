@@ -221,11 +221,10 @@ function resolve(g: Game, tgtName: string, mode: "brute" | "exploit" | "social",
   }
   // link to an active mission targeting this network (if any)
   const mission = g.missions.find((m) => m.status === "active" && m.target === tgtName);
-  const skim = resolveHack(g, tgtName, { isMission: !!mission, missionId: mission?.id, out: lines });
+  // resolveHack owns the heat math (skills, backdoors, trophies, combo) — the
+  // vector's heatFactor (brute loud / exploit quiet) is folded in via opts
+  const skim = resolveHack(g, tgtName, { isMission: !!mission, missionId: mission?.id, heatFactor, out: lines });
   lines.push(money(t(lang, "hack.skimmed", { m: fmtMoney(skim), target: tgtName })));
-  const heatGain = Math.round(tgt.heat * heatMult(g) * heatFactor);
-  g.heat += heatGain;
-  if (heatGain > 0) lines.push(dim(t(lang, "hack.heat", { h: heatGain })));
   lines.push(ok(t(lang, "hack.done", { label: tgtName })));
   void mode;
 }

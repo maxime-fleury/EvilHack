@@ -29,6 +29,7 @@ import { legendCmd } from "./legend";
 import { prestigeCmd } from "./prestige";
 import { flexCmd } from "./flex";
 import { blackmailCmd } from "./blackmail";
+import { raidCmd } from "./raid";
 
 const COMMANDS: Command[] = [
   helpCmd,
@@ -76,6 +77,7 @@ const COMMANDS: Command[] = [
   prestigeCmd,
   flexCmd,
   blackmailCmd,
+  raidCmd,
 ];
 
 export const registry = new Map<string, Command>();
@@ -120,6 +122,7 @@ export function complete(line: string): string[] {
   if (verb === "miner") return ["start", "stop", "status"].filter((s) => s.startsWith(prefix));
   if (verb === "crew") return ["hire", "fire"].filter((s) => s.startsWith(prefix));
   if (verb === "backdoor") return ["list"].filter((s) => s.startsWith(prefix));
+  if (verb === "raid") return ["flee", "pay", "brave"].filter((s) => s.startsWith(prefix));
   if (verb === "cat" || verb === "ls") return ["/home/dave/README.txt", "/home/dave/notes.txt", "/etc/frank.conf", "/var/log/crimes.log"].filter((s) => s.toLowerCase().startsWith(prefix));
   if (verb === "coin") return ["price", "buy", "sell", "status"].filter((s) => s.startsWith(prefix));
   if (verb === "settings") return ["set"].filter((s) => s.startsWith(prefix));

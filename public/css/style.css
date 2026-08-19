@@ -180,6 +180,8 @@ body.theme-matrix::after {
 }
 .stats-pill.money { color: var(--term-money); }
 .stats-pill.heat { color: var(--term-warn); }
+.stats-pill.combo { color: #a3e635; animation: comboPulse 1.6s ease-in-out infinite; }
+@keyframes comboPulse { 0%,100% { text-shadow: 0 0 2px #a3e63555; } 50% { text-shadow: 0 0 8px #a3e63588; } }
 
 .app-body { padding-top: 62px; padding-left: 10px; padding-right: 10px; }
 

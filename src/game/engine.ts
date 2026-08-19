@@ -120,6 +120,95 @@ export function styleMult(g: Game): number {
   return 1 + (r >= 1 ? r * 0.02 : 0);
 }
 
+// ── Combo / streak ─────────────────────────────────────────────────────────
+// Clean streaks are rewarded, never punished: the multiplier grows with
+// consecutive hacks that keep heat below the danger line, and it simply
+// resets (no penalty) when you slip — the game can never take anything away.
+
+export function comboOf(g: Game): number {
+  return Math.max(1, (g.flags.combo as number) || 1);
+}
+
+/** +4% loot per combo level, capped at ×1.6. */
+export function comboMult(g: Game): number {
+  return 1 + Math.min(comboOf(g) - 1, 15) * 0.04;
+}
+
+/** Call after a hack: heat under 60 extends the streak, over 85 resets it. */
+export function updateCombo(g: Game, heatGain: number): void {
+  const before = g.heat - heatGain;
+  const after = g.heat;
+  const combo = comboOf(g);
+  if (before >= 60) {
+    // came in hot — streak never starts above the danger line
+    g.flags.combo = 1;
+  } else if (after >= 85) {
+    // crossed the danger line mid-hack: gentle reset, nothing lost
+    g.flags.combo = 1;
+  } else {
+    g.flags.combo = Math.min(combo + 1, 30);
+  }
+}
+
+/** Bilingual label for the HUD combo pill. */
+export function comboLabel(lang: Lang, combo: number): string {
+  return lang === "fr" ? `🔥 combo ×${combo}` : `🔥 streak ×${combo}`;
+}
+
+// ── Trophy perks ───────────────────────────────────────────────────────────
+// Achievements stop being cosmetic: every milestone tier unlocks a permanent
+//, always-positive bonus. Nothing here can ever take anything from the player.
+
+export interface TrophyPerks {
+  loot: number; // × loot from hacks/missions
+  xp: number; // × XP gain
+  heat: number; // × heat gain (less than 1 = quieter)
+  discount: number; // × shop prices
+}
+
+const TROPHY_TIERS: { n: number; perk: Partial<TrophyPerks> }[] = [
+  { n: 5, perk: { loot: 1.05 } },
+  { n: 10, perk: { xp: 1.1 } },
+  { n: 15, perk: { heat: 0.95 } },
+  { n: 20, perk: { loot: 1.1 } },
+  { n: 25, perk: { discount: 0.95 } },
+  { n: 30, perk: { xp: 1.2 } },
+  { n: 35, perk: { loot: 1.15, heat: 0.9 } },
+];
+
+export function trophyCount(g: Game): number {
+  const list = (g.flags.achievements as string[]) || [];
+  return list.length;
+}
+
+/** Accumulated permanent perks from every unlocked tier. */
+export function trophyPerks(g: Game): TrophyPerks {
+  const base: TrophyPerks = { loot: 1, xp: 1, heat: 1, discount: 1 };
+  const n = trophyCount(g);
+  for (const t of TROPHY_TIERS) {
+    if (n >= t.n) {
+      for (const [k, v] of Object.entries(t.perk)) base[k as keyof TrophyPerks] *= v;
+    }
+  }
+  return base;
+}
+
+/** Name of the next perk tier to unlock, for the HUD tooltip. */
+export function nextTrophyTier(g: Game): { n: number; perk: Partial<TrophyPerks> } | null {
+  const n = trophyCount(g);
+  return TROPHY_TIERS.find((t) => t.n > n) || null;
+}
+
+/** Human label for a perk, e.g. "+5% loot". */
+export function perkLabel(lang: Lang, perk: Partial<TrophyPerks>): string {
+  const parts: string[] = [];
+  if (perk.loot && perk.loot !== 1) parts.push(`+${Math.round((perk.loot - 1) * 100)}% ${lang === "fr" ? "butin" : "loot"}`);
+  if (perk.xp && perk.xp !== 1) parts.push(`+${Math.round((perk.xp - 1) * 100)}% XP`);
+  if (perk.heat && perk.heat !== 1) parts.push(`−${Math.round((1 - perk.heat) * 100)}% ${lang === "fr" ? "chaleur" : "heat"}`);
+  if (perk.discount && perk.discount !== 1) parts.push(`−${Math.round((1 - perk.discount) * 100)}% ${lang === "fr" ? "shop" : "shop"}`);
+  return parts.join(" · ") || "?";
+}
+
 /** Jerry respects the drip: an extra shop discount at the top ranks. */
 export function styleDiscount(g: Game): number {
   const r = styleRank(g);
@@ -169,6 +258,7 @@ export function heatMult(g: Game): number {
   if (isArcDone(g, "spectre")) m *= 0.85; // arc perk: the Spectre's shade
   m *= Math.max(0.7, 1 - levelOf(g) * 0.01); // level perk: quieter ops
   m *= Math.max(0.7, 1 - crewPerks(g).heat); // a whisperer on the team cools traces
+  m *= trophyPerks(g).heat; // achievement perk: trophies make you quieter
   if (isArcDone(g, "merle") && g.flags.merleChoice === "turn") m *= 0.92; // double agent covers your traces
   return m;
 }
@@ -473,7 +563,7 @@ export function addFactionRep(g: Game, branch: string, n: number, out: Line[]): 
 export function shopDiscount(g: Game): number {
   const branch = (g.flags.branch as string) || "";
   const base = branch && factionRep(g, branch) >= 10 ? 0.9 : 1;
-  return base * styleDiscount(g);
+  return base * styleDiscount(g) * trophyPerks(g).discount; // achievement perk discount
 }
 
 // ── Career record ──────────────────────────────────────────────────────────
@@ -518,10 +608,11 @@ export function xpForNext(g: Game): number {
 /** Award XP; a level-up announces itself (with a cash perk) instead of the +N line. */
 export function addXp(g: Game, amount: number, out: Line[]): void {
   if (amount <= 0) return;
-  g.flags.xp = xpOf(g) + amount;
+  // achievement perks multiply XP — always positive, never a penalty
+  g.flags.xp = xpOf(g) + Math.round(amount * trophyPerks(g).xp);
   if (maybeLevelUp(g, out)) return;
   const lang = langOf(g);
-  out.push(dim(t(lang, "xp.gain", { n: amount })));
+  out.push(dim(t(lang, "xp.gain", { n: Math.round(amount * trophyPerks(g).xp) })));
 }
 
 /** Push the level-up celebration if the recorded level is behind the real one. */
@@ -1192,8 +1283,8 @@ export function tick(g: Game, minutes: number, out: Line[]) {
     }
   }
 
-  // heat event
-  if (g.heat >= 80 && !g.flags.laylowUntil) {
+  // heat event — only a fresh knock if the raid isn't already pending
+  if (g.heat >= 80 && !g.flags.laylowUntil && !g.flags.raidPending) {
     handleHeatEvent(g, out);
   }
 
@@ -1258,23 +1349,53 @@ function handleRandomEvent(g: Game, out: Line[]) {
 function handleHeatEvent(g: Game, out: Line[]) {
   g.flags.aiReact = "heat_peak";
   const lang = langOf(g);
+  // the raid is a friendly prompt — every option is positive or neutral,
+  // nothing here can soft-lock the game or take permanent progress away
+  g.flags.raidPending = true;
   out.push(warn(t(lang, "heat.knock")));
-  const bribe = Math.max(50, Math.round(g.money * 0.25));
-  if (g.money >= bribe) {
-    g.money -= bribe;
-    g.heat = Math.max(0, g.heat - 40);
-    out.push(warn(t(lang, "heat.bribe", { m: fmtMoney(bribe) })));
-    logEvent(g, t(lang, "heat.paid", { m: fmtMoney(bribe) }));
+  out.push(dim(t(lang, "heat.raidChoices")));
+  out.push(dim(`   → raid flee`));
+  out.push(dim(`   → raid pay`));
+  out.push(dim(`   → raid brave`));
+  logEvent(g, t(lang, "heat.knockLog"));
+}
+
+/**
+ * Resolve a heat raid. All outcomes are positive or neutral — the player
+ * can never lose progress, only ever recover and get back to the fun.
+ */
+export function resolveRaid(g: Game, choice: "flee" | "pay" | "brave"): Line[] {
+  const lang = langOf(g);
+  const out: Line[] = [];
+  g.flags.raidPending = false;
+  if (!g.flags.aiReact) g.flags.aiReact = "heat_peak";
+  const bribe = Math.max(50, Math.round(g.money * 0.15));
+
+  if (choice === "flee") {
+    // free escape: you lose nothing, heat drops a bit
+    g.heat = Math.max(0, g.heat - 20);
+    out.push(ok(t(lang, "heat.flee")));
+    if (Math.random() < 0.3) out.push(dim(t(lang, "heat.fleeFlavor")));
+    logEvent(g, t(lang, "heat.fleeLog"));
+  } else if (choice === "pay") {
+    const paid = Math.min(bribe, g.money);
+    g.money -= paid;
+    g.heat = Math.max(0, g.heat - 45);
+    out.push(ok(t(lang, "heat.bribe", { m: fmtMoney(paid) })));
+    logEvent(g, t(lang, "heat.paid", { m: fmtMoney(paid) }));
   } else {
-    const days = 3;
-    g.flags.laylowUntil = g.day + days;
-    g.heat = Math.max(0, g.heat - 25);
-    out.push(err(t(lang, "heat.laylow", { d: days })));
-    logEvent(g, t(lang, "heat.hid"));
-    if (!g.flags.aiReact) g.flags.aiReact = "laylow";
+    // brave: riskier flavor but always a win — rep, style, cool factor
+    const rep = 1 + Math.floor(Math.random() * 2);
+    g.rep += rep;
+    g.style += 5;
+    g.heat = Math.max(0, g.heat - 15);
+    out.push(ok(t(lang, "heat.brave", { r: rep })));
+    addNews(g, t(lang, "heat.braveNews"), t(lang, "heat.braveNewsB"));
+    logEvent(g, t(lang, "heat.braveLog"));
   }
-  // a raid can burn a known backdoor
+  // a raid can burn a known backdoor (recoverable — you can re-hack later)
   maybeBurnBackdoor(g, out);
+  return out;
 }
 
 function checkMilestones(g: Game, out: Line[]) {
@@ -1323,7 +1444,7 @@ function checkMilestones(g: Game, out: Line[]) {
 export function resolveHack(
   g: Game,
   targetName: string,
-  opts: { isMission?: boolean; missionId?: number; label?: string; out?: Line[] } = {}
+  opts: { isMission?: boolean; missionId?: number; label?: string; out?: Line[]; heatFactor?: number } = {}
 ): number {
   const lang = langOf(g);
   const out = opts.out || [];
@@ -1343,12 +1464,15 @@ export function resolveHack(
   }
   // cash + loot (Vault Key arc perk: +25% skim; prestige: +10%/run; backdoor: silent)
   const bd = backdoorBonus(g, targetName);
+  const trophies = trophyPerks(g);
   const skim =
     (target?.basePayout ?? 30 * diff) *
     (0.7 + Math.random() * 0.6) *
     (isArcDone(g, "vault") ? 1.25 : 1) *
     prestigeMult(g) *
     styleMult(g) * // the drip pays for itself
+    trophies.loot * // achievement perks
+    comboMult(g) * // clean-streak bonus
     (bd.speed < 1 ? 0.8 : 1); // silent revisit pays a bit less (no new data)
   g.money += skim;
   trackEarned(g, skim);
@@ -1384,12 +1508,16 @@ export function resolveHack(
       logEvent(g, t(lang, "hack.fraglog", { npc: npc.name }));
     }
   }
-  // heat gain (skills make you quieter, backdoors are silent)
+  // heat gain (skills make you quieter, backdoors are silent; vector loudness folds in)
   const heatGain = Math.round(
-    (target?.heat ?? 4) * heatMult(g) * (target?.skill ? Math.max(0.6, 1 - skillLevel(g, target.skill) * 0.04) : 1) * bd.heat
+    (target?.heat ?? 4) * heatMult(g) * (opts.heatFactor ?? 1) * (target?.skill ? Math.max(0.6, 1 - skillLevel(g, target.skill) * 0.04) : 1) * bd.heat * trophies.heat
   );
   g.heat += heatGain;
+  updateCombo(g, heatGain);
   if (heatGain > 0) out.push(dim(t(lang, "hack.heat", { h: heatGain })));
+  if (comboOf(g) >= 3) {
+    out.push(dim(t(lang, "combo.up", { n: comboOf(g), m: comboMult(g).toFixed(2) })));
+  }
   logEvent(g, t(lang, "hack.logHacked", { target: targetName }));
   if (!isMission && Math.random() < 0.15) {
     addNews(g, t(lang, "hack.breach", { target: targetName }), t(lang, "hack.breachBody"));
@@ -1398,7 +1526,8 @@ export function resolveHack(
     const m = g.missions.find((x) => x.id === opts.missionId)!;
     out.push(ok(t(lang, "hack.missionDone", { title: missionTitle(lang, m.template), id: m.id })));
   }
-  addXp(g, isMission ? 30 : 20, out);
+  addXp(g, Math.round((isMission ? 30 : 20) * trophies.xp), out);
+  if (comboOf(g) >= 8 && !g.flags.aiReact) g.flags.aiReact = "combo";
   if (!g.flags.aiReact) g.flags.aiReact = isMission ? "mission_done" : "hack_done";
   // hacking a host can unlock a related mission (guaranteed, not lottery)
   unlockMissionsOnHack(g, targetName, out);
@@ -1492,7 +1621,7 @@ export function dispatch(g: Game, raw: string): CmdResult {
   const [name, ...args] = trimmed.split(/\s+/);
   const lang = langOf(g);
   // Frank is off: only reboot (and help) work
-  if (g.flags.powered === false && !["reboot", "help", "?"].includes(name.toLowerCase())) {
+  if (g.flags.powered === false && !["reboot", "help", "?", "raid"].includes(name.toLowerCase())) {
     return { lines: [err(t(lang, "power.blocked"))], minutes: 0 };
   }
   // ── Login: the first thing you type is your name (no password, ever) ──
@@ -1593,12 +1722,16 @@ export interface State {
   nullsec: boolean;
   laylow: number;
   pendingChoice: string;
+  raidPending: boolean;
   xp: number;
   level: number;
   morality: number;
   hat: string;
   achievements: string[];
   achTotal: number;
+  combo: number;
+  comboMult: number;
+  trophies: { count: number; loot: number; xp: number; heat: number; discount: number; next: { n: number; label: string } | null };
   arcs: { id: string; title: string; status: string; step: number; total: number; steps: string[] }[];
   skills: { sql: number; social: number; zero: number };
   faction: { branch: string; rep: Record<string, number> };
@@ -1663,12 +1796,27 @@ export function snapshot(g: Game): State {
     nullsec: !!g.flags.nullsecContacted,
     laylow: (g.flags.laylowUntil as number) || 0,
     pendingChoice: (g.flags.pendingChoice as string) || "",
+    raidPending: !!g.flags.raidPending,
     xp: xpOf(g),
     level: levelOf(g),
     morality: moralityOf(g),
     hat: hatLabel(lang, hatBand(g)),
     achievements: (g.flags.achievements as string[]) || [],
     achTotal: ACHIEVEMENTS.length,
+    combo: comboOf(g),
+    comboMult: comboMult(g),
+    trophies: (() => {
+      const perks = trophyPerks(g);
+      const next = nextTrophyTier(g);
+      return {
+        count: trophyCount(g),
+        loot: perks.loot,
+        xp: perks.xp,
+        heat: perks.heat,
+        discount: perks.discount,
+        next: next ? { n: next.n, label: perkLabel(lang, next.perk) } : null,
+      };
+    })(),
     arcs: ARCS.filter((a) => {
       const st = arcState(g)[a.id];
       return st?.active || st?.done;
