@@ -1,5 +1,5 @@
 import type { Command } from "./types";
-import { blank, dim, divider, err, info, title } from "../output";
+import { blank, dim, divider, err, info, ok, title } from "../output";
 import type { Bilingual } from "../i18n";
 import { pick, t } from "../i18n";
 import { langOf } from "../engine";
@@ -167,14 +167,42 @@ function renderChapter(g: { name: string }, lang: "en" | "fr", ch: Chapter) {
 export const tutorialCmd: Command = {
   name: "tutorial",
   aliases: ["tuto", "guide"],
-  usage: "tutorial [1-8]",
-  help: "Relaunch the tutorial — the whole guide, or one chapter.",
-  detail: "A structured guide you can re-open any time. `tutorial` shows the table of contents; `tutorial <n>` shows one chapter.",
+  usage: "tutorial [start | skip | 1-8]",
+  help: "Relaunch the tutorial — the guided walkthrough, or one chapter.",
+  detail: "`tutorial start` replays the guided first-hack walkthrough (skippable any time). `tutorial skip` dismisses it. `tutorial` shows the chapters; `tutorial <n>` shows one chapter.",
   run: (g, args) => {
     const lang = langOf(g);
     const lines = [];
-    const want = parseInt(args[0] || "", 10);
+    const arg = (args[0] || "").toLowerCase();
 
+    // ── start: replay the guided walkthrough from step 0 ───────────────────
+    if (arg === "start" || arg === "replay") {
+      g.flags.tutorialStep = 0;
+      g.flags.tutorial = {};
+      g.flags.tutorialDone = false;
+      g.flags.tutorialSkipped = false;
+      lines.push(ok(t(lang, "tutorial.restarted")));
+      lines.push(info(t(lang, "tutorial.follow", { n: 1 })));
+      lines.push(dim("   → scan"));
+      lines.push(dim("   → hack <cible>"));
+      lines.push(dim("   → missions"));
+      lines.push(dim("   → missions deliver <id>"));
+      lines.push(blank);
+      lines.push(dim(t(lang, "tutorial.skipHint")));
+      return { lines, minutes: 0 };
+    }
+
+    // ── skip: dismiss the guided walkthrough (replayable later) ────────────
+    if (arg === "skip" || arg === "stop") {
+      g.flags.tutorialDone = true;
+      g.flags.tutorialSkipped = true;
+      g.flags.tutorialStep = TUTORIAL_STEPS;
+      lines.push(info(t(lang, "tutorial.skipped")));
+      lines.push(dim(t(lang, "tutorial.resumeHint")));
+      return { lines, minutes: 0 };
+    }
+
+    const want = parseInt(args[0] || "", 10);
     if (want) {
       const ch = CHAPTERS.find((c) => c.n === want);
       if (!ch) {
@@ -194,6 +222,10 @@ export const tutorialCmd: Command = {
     lines.push(dim(t(lang, "tutorial.open", { n: 1 })));
     lines.push(blank);
     lines.push(dim(t(lang, "tutorial.skippable")));
+    lines.push(dim(t(lang, "tutorial.controls")));
     return { lines, minutes: 0 };
   },
 };
+
+// the guided walkthrough has 5 steps (scan → hack → missions → deliver → done)
+const TUTORIAL_STEPS = 5;

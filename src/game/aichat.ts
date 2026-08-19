@@ -313,13 +313,14 @@ const TUTORIAL: { key: string; text: Bilingual }[] = [
 
 function tutorialNudge(g: Game): Bilingual | null {
   const f = g.flags;
+  if (f.tutorialDone === true || f.tutorialSkipped === true) return null;
   const tut = (f.tutorial as Record<string, boolean>) || {};
   const step = (f.tutorialStep as number) || 0;
   if (step >= TUTORIAL.length) return null;
   const entry = TUTORIAL[step];
   // determine readiness for the current step (the trigger that unlocks it)
   let ready = false;
-  if (step === 0) ready = ((f.cmdCount as number) || 0) >= 3;
+  if (step === 0) ready = ((f.cmdCount as number) || 0) >= 1; // first real command — "tape scan"
   else if (step === 1) ready = (f.firstScan as boolean) === true;
   else if (step === 2) ready = (f.firstHack as boolean) === true;
   else if (step === 3) ready = (f.firstMission as boolean) === true;

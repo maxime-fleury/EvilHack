@@ -71,6 +71,23 @@
     </div>
   </div>
 
+  <!-- Guided tutorial: forced once after login, but skippable & relaunchable -->
+  <div id="tutorial-panel" aria-label="guided tutorial" class="hidden">
+    <div class="tutorial-card">
+      <div class="tutorial-head">
+        <span class="tutorial-title" id="tuto-title">TUTORIAL</span>
+        <span class="tutorial-step" id="tuto-step">1/5</span>
+        <button class="tutorial-close" id="tuto-close" title="close">✕</button>
+      </div>
+      <div class="tutorial-progress"><div class="tutorial-fill" id="tuto-fill"></div></div>
+      <div class="tutorial-text" id="tuto-text"></div>
+      <div class="tutorial-actions">
+        <button class="btn-term" id="tuto-run">➤ run it</button>
+        <button class="btn-term btn-ghost" id="tuto-skip">skip</button>
+      </div>
+    </div>
+  </div>
+
   <!-- The desktop -->
   <div id="desktop">
     <div id="desktop-icons" aria-label="desktop icons"></div>

@@ -398,6 +398,46 @@ textarea.ai-prompt { min-height: 110px; font-size: .75rem; }
 .login-error { margin-top: .9rem; font-size: .76rem; color: var(--term-err); min-height: 1em; }
 .login-hint { margin-top: 1.25rem; font-size: .68rem; color: var(--term-dim); opacity: .72; }
 
+/* Guided tutorial overlay — forced once after login, skippable & relaunchable */
+#tutorial-panel {
+  position: fixed; inset: 0; z-index: 940;
+  background: rgba(2, 6, 3, .78);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(3px);
+  animation: tutorialIn .25s ease;
+}
+#tutorial-panel.hidden { display: none; }
+@keyframes tutorialIn { from { opacity: 0; } to { opacity: 1; } }
+.tutorial-card {
+  width: min(520px, 92vw);
+  background: #0a100b; border: 1px solid #1c2a1e; border-radius: 14px;
+  box-shadow: 0 0 70px rgba(34, 197, 94, .1), inset 0 0 50px rgba(0, 0, 0, .55);
+  animation: loginIn .28s ease;
+}
+.tutorial-head {
+  display: flex; align-items: center; gap: .7rem;
+  padding: .85rem 1.1rem; border-bottom: 1px solid #141e16;
+}
+.tutorial-title { font-weight: 700; letter-spacing: .22em; color: var(--term-ok); font-size: .85rem; }
+.tutorial-step { margin-left: auto; font-size: .72rem; color: var(--term-dim); }
+.tutorial-close {
+  background: none; border: none; color: var(--term-dim); cursor: pointer;
+  font-size: .9rem; padding: 0 .2rem; line-height: 1;
+}
+.tutorial-close:hover { color: var(--term-fg); }
+.tutorial-progress { height: 4px; background: #0f1a12; }
+.tutorial-fill { height: 100%; width: 20%; background: var(--term-ok); box-shadow: 0 0 8px var(--term-ok); transition: width .35s ease; }
+.tutorial-text {
+  padding: 1.2rem 1.4rem; font-size: .86rem; line-height: 1.55; color: var(--term-fg); min-height: 5.4rem;
+}
+.tutorial-text b { color: var(--term-ok); font-weight: 700; }
+.tutorial-actions {
+  display: flex; gap: .7rem; justify-content: flex-end; flex-wrap: wrap;
+  padding: 0 1.4rem 1.2rem;
+}
+.btn-ghost { background: transparent; border: 1px solid #22301f; color: var(--term-dim); }
+.btn-ghost:hover { border-color: var(--term-dim); color: var(--term-fg); }
+
 /* Boot animation after login */
 #boot-overlay {
   position: fixed; inset: 0; z-index: 950;

@@ -959,6 +959,8 @@ export function newGame(db: Database): Game {
       firstScan: false,
       firstMission: false,
       firstDelivery: false,
+      tutorialDone: false,
+      tutorialSkipped: false,
       identified: false,
       arcs: {},
       alignHistory: [],
@@ -1476,9 +1478,10 @@ export function resolveHack(
     (bd.speed < 1 ? 0.8 : 1); // silent revisit pays a bit less (no new data)
   g.money += skim;
   trackEarned(g, skim);
-  // career record
+  // career record + first-hack milestone (drives the tutorial chain)
   const c = careerOf(g);
   c.hacksDone = (c.hacksDone || 0) + 1;
+  if (!g.flags.firstHack) g.flags.firstHack = true;
   const tc = (c.targetCounts as Record<string, number>) || {};
   tc[targetName] = (tc[targetName] || 0) + 1;
   c.targetCounts = tc;
@@ -1739,6 +1742,7 @@ export interface State {
   slot: number;
   powered: boolean;
   identified: boolean;
+  tutorial: { step: number; total: number; done: boolean; skipped: boolean; firstScan: boolean; firstHack: boolean; firstMission: boolean; firstDelivery: boolean };
   backdoors: { target: string; day: number }[];
   crew: { id: string; hiredDay: number }[];
   prestige: number;
@@ -1844,6 +1848,17 @@ export function snapshot(g: Game): State {
     slot: currentSlot(),
     powered: g.flags.powered !== false,
     identified: isIdentified(g),
+    // guided tutorial state — the client renders a skippable, relaunchable panel
+    tutorial: {
+      step: Math.min(5, (g.flags.tutorialStep as number) || 0),
+      total: 5,
+      done: g.flags.tutorialDone === true || (g.flags.tutorialStep as number || 0) >= 5,
+      skipped: g.flags.tutorialSkipped === true,
+      firstScan: g.flags.firstScan === true,
+      firstHack: g.flags.firstHack === true,
+      firstMission: g.flags.firstMission === true,
+      firstDelivery: g.flags.firstDelivery === true,
+    },
     backdoors: backdoorsOf(g),
     crew: crewOf(g),
     prestige: prestigeCount(g),

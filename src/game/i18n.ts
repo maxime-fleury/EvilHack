@@ -593,6 +593,12 @@ const CAT: Record<string, Bilingual> = {
   "tutorial.skippable": { en: "Everything here is optional. The terminal doesn't judge. (Noro-chan does, but she'd do that anyway.)", fr: "Tout ici est facultatif. Le terminal ne juge pas. (Noro-chan si, mais elle le ferait de toute façon.)" },
   "tutorial.next": { en: "→ tutorial {n} for the next chapter · tutorial for the contents", fr: "→ tutorial {n} pour le chapitre suivant · tutorial pour le sommaire" },
   "tutorial.noChapter": { en: "No chapter '{n}'. Chapters run 1–{max}. Try 'tutorial'. ", fr: "Pas de chapitre « {n} ». Les chapitres vont de 1 à {max}. Essayez 'tutorial'." },
+  "tutorial.restarted": { en: "Guide restarted. Noro-chan will walk you through your first steps again.", fr: "Guide relancé. Noro-chan va te guider à nouveau dans tes premiers pas." },
+  "tutorial.follow": { en: "Follow the prompts — one step at a time. Step {n}:", fr: "Suis les instructions — une étape à la fois. Étape {n} :" },
+  "tutorial.skipHint": { en: "Bored? Type 'tutorial skip' any time. I'll be here with the popcorn~", fr: "Ennuyé ? Tape « tutorial skip » quand tu veux. Je serai là avec le pop-corn~" },
+  "tutorial.skipped": { en: "Skipped~ fine, do it your way. ('tutorial start' if you change your mind.)", fr: "Passé~ bon, fais à ta façon. (« tutorial start » si tu changes d'avis.)" },
+  "tutorial.resumeHint": { en: "You can re-open the guided walkthrough any time: 'tutorial start', or the Settings tab.", fr: "Tu peux relancer le guide pas à pas à tout moment : « tutorial start », ou l'onglet Réglages." },
+  "tutorial.controls": { en: "→ tutorial start to replay the guided walkthrough · tutorial skip to dismiss it", fr: "→ tutorial start pour rejouer le guide guidé · tutorial skip pour le fermer" },
 
   // proactive contextual hints
   "hint.gpu": { en: "Psst Dave~ you're mining with a potato. Buy a GPU at the shop. 'shop', then 'buy gpu1'. Or keep being pathetic, it's a look.", fr: "Psst Dave~ tu mines avec une patate. Achète un GPU à la boutique. « shop », puis « buy gpu1 ». Ou continue d'être pathétique, ça te va bien." },
@@ -607,7 +613,7 @@ const CAT: Record<string, Bilingual> = {
 
 export const CMD_HELP: Record<string, Bilingual> = {
   help: { en: "Show this help, or details about a specific command.", fr: "Affiche l'aide, ou les détails d'une commande." },
-  tutorial: { en: "Relaunch the tutorial — the whole guide, or one chapter.", fr: "Relancez le tutoriel — le guide complet, ou un chapitre." },
+  tutorial: { en: "Relaunch the guided walkthrough, or read a chapter.", fr: "Relancez le guide guidé, ou lisez un chapitre." },
   stats: { en: "Show your full player sheet.", fr: "Affiche votre fiche complète de joueur." },
   scan: { en: "Scan nearby networks. Optionally inspect one.", fr: "Scanne les réseaux à proximité. Inspectez-en un en option." },
   hack: { en: "Start a brute-force hack on a target from the scan list.", fr: "Lance un hack par force brute sur une cible de la liste scan." },
@@ -642,7 +648,7 @@ export const CMD_HELP: Record<string, Bilingual> = {
 
 export const CMD_DETAIL: Record<string, Bilingual> = {
   help: { en: "Lists all commands grouped by category. Use `help <command>` for details on one command.", fr: "Liste toutes les commandes par catégorie. Utilisez `help <commande>` pour les détails d'une commande." },
-  tutorial: { en: "A structured guide you can re-open any time. `tutorial` shows the table of contents; `tutorial <n>` shows one chapter.", fr: "Un guide structuré que vous pouvez rouvrir à tout moment. `tutorial` affiche le sommaire ; `tutorial <n>` affiche un chapitre." },
+  tutorial: { en: "`tutorial start` replays the guided first-hack walkthrough (skippable any time). `tutorial skip` dismisses it. `tutorial` shows the chapters; `tutorial <n>` shows one chapter.", fr: "`tutorial start` rejoue le guide guidé du premier hack (sautable à tout moment). `tutorial skip` le ferme. `tutorial` affiche les chapitres ; `tutorial <n>` affiche un chapitre." },
   stats: { en: "Displays money, reputation, heat, style, your laptop's hardware, and derived stats.", fr: "Affiche l'argent, la réputation, la chaleur, le style, le matériel de votre ordinateur et les stats dérivées." },
   scan: { en: "Lists all hackable networks in range with difficulty ratings. `scan <name>` shows details for one target.", fr: "Liste tous les réseaux piratables à portée avec leur difficulté. `scan <nom>` montre les détails d'une cible." },
   hack: { en: "Starts a background hack job. It takes time (based on your CPU). You can do other things while it runs. Your RAM limits how many hacks run in parallel.", fr: "Lance un hack en arrière-plan. Il prend du temps (selon votre CPU). Vous pouvez faire autre chose pendant ce temps. Votre RAM limite le nombre de hacks en parallèle." },

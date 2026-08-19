@@ -3,6 +3,7 @@ import * as term from "./terminal.js";
 import { renderStats, renderMissions, renderInv, renderShop, renderPeople, renderNews, renderHelp, renderSettings, WALLS, unlockedWalls } from "./ui.js";
 import { initChat, addMsg, setupChat, setChatTabState } from "./chat.js";
 import { setupShell, setLocked, playBoot, showLogin, setLoginTexts, setShellLang, openApp } from "./os.js";
+import { wireTutorial, updateTutorial, showTutorial, isTutorialOpen } from "./tutorial.js";
 import { setSound, setVolume, sBoot, sPowerOff, sShutdown, sScreensaver, sAchievement, sLevelUp, sAlarm, sWarning, sCoin, sHackStart, sHackDone, sMission, sDanger, sMining, setAmbient } from "./sound.js";
 
 let state = null;
@@ -173,6 +174,7 @@ function applyState(s) {
   applyWallpaper(s);
   updateNavbar(s);
   updatePanels();
+  updateTutorial(s);
   setLoginTexts(LOGIN_TXT[s.flags?.lang === "fr" ? "fr" : "en"]);
   setShellLang(s.flags?.lang === "fr" ? "fr" : "en");
   setLocked(s.identified === false);
@@ -237,6 +239,10 @@ async function runCommand(val) {
     if (low.includes("puppycoin") && (low.includes("acheté") || low.includes("bought"))) sCoin();
     if (low.includes("🔥") || low.includes("🚨") || /heat.*(crit|dang|max)/i.test(low)) sWarning();
     if (data.state) applyState(data.state);
+    // "tutorial start" re-opens the guided overlay (skip closes it via the button)
+    if (/^tutorial\s+(start|replay)/.test(val.trim())) {
+      showTutorial();
+    }
     if (data.nudge) {
       addMsg("ai", data.nudge.text, true, { suggestions: data.nudge.suggestions || [] });
       // Noro-chan ran a command for you — execute it and let her comment
@@ -280,6 +286,7 @@ async function boot() {
   term.bootLines(lang).forEach((l) => term.appendLine(l));
   term.onSubmit(runCommand);
   initChat();
+  wireTutorial((c) => runCommand(c));
 
   // the player picks their handle in the login panel, which sends the name as
   // the first "command" — the server treats it as identification (no password)

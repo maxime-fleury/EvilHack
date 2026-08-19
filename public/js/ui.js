@@ -27,6 +27,7 @@ const L = (lang) => ({
     hat: "Alignement (0 white · 50 gray · 100 black)",
     aiName: "Nom de l'assistante IA", aiPrompt: "Prompt de l'assistante IA (éditable)", server: "Serveur (LM Studio)", urlPort: "URL + port — ex. http://127.0.0.1:3007",
     dangerZone: "Zone dangereuse", dangerText: "Efface cette sauvegarde et repars de zéro. Frank se souviendra. (Garde la langue et les préférences.)", resetSave: "☠ reset la sauvegarde", applySettings: "appliquer les réglages ➤", testConn: "tester la connexion ➤",
+    relaunchTuto: "🎓 Relancer le tuto guidé", relaunchTutoHint: "Rejoue le guide pas à pas (scan → hack → missions → livraison). Skippable à tout moment.",
     statusOnline: (u) => `statut : EN LIGNE ✓ (${u})`, statusOffline: (u) => `statut : HORS LIGNE ✗ (${u})`, statusUnknown: "statut : inconnu", checking: "vérification…",
   },
   en: {
@@ -52,6 +53,7 @@ const L = (lang) => ({
     hat: "Alignment (0 white · 50 gray · 100 black)",
     aiName: "AI assistant name", aiPrompt: "AI assistant prompt (editable)", server: "server (LM Studio)", urlPort: "URL + port — e.g. http://127.0.0.1:3007",
     dangerZone: "danger zone", dangerText: "Wipe this save and start from zero. Frank will remember. (Keeps language & preferences.)", resetSave: "☠ reset save", applySettings: "apply settings ➤", testConn: "test connection ➤",
+    relaunchTuto: "🎓 Relaunch guided tutorial", relaunchTutoHint: "Replays the step-by-step guide (scan → hack → missions → deliver). Skippable any time.",
     statusOnline: (u) => `status: ONLINE ✓ (${u})`, statusOffline: (u) => `status: OFFLINE ✗ (${u})`, statusUnknown: "status: unknown", checking: "checking…",
   },
 })[lang === "fr" ? "fr" : "en"];
@@ -452,6 +454,7 @@ export function renderSettings(state, actions) {
     )}</textarea>` +
     `<div class="v mt-1" style="font-size:.68rem;color:var(--term-dim)">${state.flags.aiprompt ? "" : state.flags?.lang === "fr" ? "Prompt par défaut — modifie-le pour changer la personnalité de l'IA." : "Default prompt — edit it to change the AI's personality."}</div></div>` +
     `<div class="panel-card"><div class="k">${L_.server}</div><div class="v mt-1" style="font-size:.72rem">${L_.urlPort}</div><input id="set-aiurl" class="form-control form-control-sm mt-1" value="${esc(state.flags.aiurl || "http://127.0.0.1:3007")}" placeholder="http://127.0.0.1:3007" /><div class="v mt-1" style="font-size:.72rem" id="ai-status">${L_.statusUnknown}</div><button class="btn-term mt-2" id="test-ai">${L_.testConn}</button></div>` +
+    `<div class="panel-card"><div class="k">${L_.relaunchTuto}</div><div class="v mt-1" style="font-size:.75rem">${L_.relaunchTutoHint}</div><button class="btn-term mt-2" id="relaunch-tuto">${L_.relaunchTuto}</button></div>` +
     `<div class="panel-card danger-zone"><div class="k">${L_.dangerZone}</div><div class="v mt-1" style="font-size:.75rem">${L_.dangerText}</div><button class="btn-term btn-danger mt-2" id="reset-game">${L_.resetSave}</button></div>` +
     `<button class="btn-term mt-2" id="save-settings">${L_.applySettings}</button>`;
   // restore what was being typed (and where the caret was)
@@ -515,6 +518,7 @@ export function renderSettings(state, actions) {
     }
   });
   el.querySelector("#save-settings").addEventListener("click", () => save());
+  el.querySelector("#relaunch-tuto")?.addEventListener("click", () => actions.runCommand("tutorial start"));
   el.querySelector("#reset-game").addEventListener("click", () => {
     if (confirm(state.flags?.lang === "fr" ? "Réinitialiser la sauvegarde ? Tout sera effacé. Frank se souviendra." : "Reset the save? Everything will be wiped. Frank will remember.")) {
       actions.runCommand("reset");
