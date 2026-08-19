@@ -51,7 +51,7 @@ export const settingsCmd: Command = {
       lines.push(ok(t(lang, "settings.set", { k: key, v: val })));
       if (key === "lang") {
         // the snapshot is rebuilt by resolve(); announce so the player knows
-        lines.push(dim(val === "fr" ? "Le jeu est maintenant en français. Bonne chance, Dave." : "Game is now in English. Good luck, Dave."));
+        lines.push(dim(val === "fr" ? `Le jeu est maintenant en français. Bonne chance, ${g.name}.` : `Game is now in English. Good luck, ${g.name}.`));
       }
       return { lines, minutes: 0 };
     }

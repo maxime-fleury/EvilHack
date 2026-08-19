@@ -76,6 +76,7 @@ const CAT: Record<string, Bilingual> = {
   "hack.fragment": { en: "📄 found a dossier fragment on {npc} ({f}/3).", fr: "📄 fragment de dossier trouvé sur {npc} ({f}/3)." },
   "hack.heat": { en: "heat +{h}", fr: "chaleur +{h}" },
   "hack.missionDone": { en: "Mission objective complete: {title}. Run `missions deliver {id}`.", fr: "Objectif de mission terminé : {title}. Faites `missions deliver {id}`." },
+  "hack.unlockMission": { en: "💼 Something came out of this hack… a new contract is waiting: {title} (#{id}). Check `missions`.", fr: "💼 Ce hack a révélé quelque chose… un nouveau contrat vous attend : {title} (#{id}). Consultez `missions`." },
 
   // missions
   "mis.usageAccept": { en: "Usage: missions accept <id>", fr: "Usage : missions accept <id>" },
@@ -197,7 +198,7 @@ const CAT: Record<string, Bilingual> = {
   "save.ok": { en: "State saved to SQLite. (It was already saved. Every command saves. You're welcome.)", fr: "État sauvegardé dans SQLite. (C'était déjà fait. Chaque commande sauvegarde. De rien.)" },
   "save.dim": { en: "Your life choices are now permanently recorded in a database file.", fr: "Vos choix de vie sont désormais enregistrés à jamais dans un fichier de base de données." },
   "reset.wipe": { en: "Wiping the database…", fr: "Effacement de la base de données…" },
-  "reset.ok": { en: "Save wiped. Dave has no memory of the crimes. Frank has all of them.", fr: "Sauvegarde effacée. Dave n'a aucun souvenir des crimes. Frank les a tous." },
+  "reset.ok": { en: "Save wiped. {name} has no memory of the crimes. Frank has all of them.", fr: "Sauvegarde effacée. {name} n'a aucun souvenir des crimes. Frank les a tous." },
   "reset.again": { en: "Type 'help' to begin again.", fr: "Tapez 'help' pour recommencer." },
   "whoami.1": { en: "You are {name}.", fr: "Vous êtes {name}." },
   "whoami.2": { en: "Ex-devops. Unemployed. Bored. Capable of far worse than you've done so far. Mostly just tired.", fr: "Ex-devops. Au chômage. Ennuyé. Capable de bien pire que ce que vous avez fait jusqu'ici. Surtout fatigué." },
@@ -315,6 +316,20 @@ const CAT: Record<string, Bilingual> = {
   "hack.eventAborted": { en: "You pull out. Nothing gained, nothing burned.", fr: "Vous vous retirez. Rien gagné, rien brûlé." },
   "hack.vectorChosen": { en: "Vector locked: {v}. Going in…", fr: "Vecteur verrouillé : {v}. Entrée en cours…" },
   "hack.noEvent": { en: "Nothing tripped — you're mid-hack. Pick your vector or wait it out.", fr: "Rien ne s'est déclenché — vous êtes en plein hack. Choisissez un vecteur ou attendez." },
+  "mis.giver": { en: "Giver", fr: "Donneur" },
+  "mis.earlyBonus": { en: "Delivered early — bonus {m}!", fr: "Livré en avance — bonus {m} !" },
+
+  // hat alignment
+  // hacker slang stays in English in French too — nobody says « chapeau gris »
+  "hat.white": { en: "White Hat", fr: "White Hat" },
+  "hat.gray": { en: "Gray Hat", fr: "Grey Hat" },
+  "hat.black": { en: "Black Hat", fr: "Black Hat" },
+  "hat.band": { en: "⚖ Your alignment shifts: you're a {label} now.", fr: "⚖ Votre alignement change : vous êtes un {label} désormais." },
+  "hat.think": { en: "The underworld is starting to talk. Frank isn't sure what to think.", fr: "Le milieu commence à jaser. Frank ne sait pas trop quoi en penser." },
+  "hat.log": { en: "Alignment shifted: {label}", fr: "Alignement modifié : {label}" },
+  "hat.missionWhite": { en: "The job was… almost noble. Almost.", fr: "La mission était… presque noble. Presque." },
+  "hat.missionBlack": { en: "That one left a stain. A stylish stain.", fr: "Celle-là laisse une tache. Une tache stylée." },
+  "hat.bar": { en: "   Alignment: ⚖ {label} ({m}/100 — 0 white · 50 gray · 100 black)", fr: "   Alignement : ⚖ {label} ({m}/100 — 0 white · 50 gray · 100 black)" },
 
   // skills
   "skills.title": { en: "Skills (rise with use)", fr: "Compétences (montent à l'usage)" },
@@ -348,7 +363,7 @@ const CAT: Record<string, Bilingual> = {
   "event.chance": { en: "📦 A day in the life…", fr: "📦 Une journée dans la vie…" },
 
   // career
-  "career.title": { en: "CAREER RECORD — Dave's legend so far", fr: "PALMARÈS — La légende de Dave jusqu'ici" },
+  "career.title": { en: "CAREER RECORD — {name}'s legend so far", fr: "PALMARÈS — La légende de {name} jusqu'ici" },
   "career.hours": { en: "   Time since firing: {h}h ({d} days)", fr: "   Temps depuis le licenciement : {h}h ({d} jours)" },
   "career.hacks": { en: "   Hacks completed: {n}", fr: "   Hacks terminés : {n}" },
   "career.moneyEarned": { en: "   Total money earned: {m}", fr: "   Argent gagné au total : {m}" },
@@ -391,7 +406,7 @@ const CAT: Record<string, Bilingual> = {
   "tut.done": { en: "And that's the game, Dave~ scan, hack, deliver, upgrade, repeat. Try the shop next: 'shop' or the Shop tab. You're basically employed now. In crime.", fr: "Et voilà le jeu, Dave~ scan, hack, livre, améliore, recommence. Essaie la boutique ensuite : « shop » ou l'onglet Boutique. T'es quasi employé, là. Dans le crime." },
 
   // power / ambiance
-  "power.off": { en: "Shutting down Frank…\nFrank lets out a sad little beep.\nGoodnight, Dave.", fr: "Extinction de Frank…\nFrank émet un petit bip triste.\nBonne nuit, Dave." },
+  "power.off": { en: "Shutting down Frank…\nFrank lets out a sad little beep.\nGoodnight, {name}.", fr: "Extinction de Frank…\nFrank émet un petit bip triste.\nBonne nuit, {name}." },
   "power.on": { en: "Booting Frank (2008 HP Pavilion)…\nBIOS: Frank Industries — version 6.66\nFrank is awake. He has seen things. He is ready to see more.", fr: "Démarrage de Frank (HP Pavilion 2008)…\nBIOS : Frank Industries — version 6.66\nFrank est réveillé. Il a vu des choses. Il est prêt à en voir plus." },
   "power.blocked": { en: "Frank is powered off. The screen is dark. A faint 'reboot' is the only way back.", fr: "Frank est éteint. L'écran est noir. Un « reboot » est le seul chemin du retour." },
   "power.hint": { en: "Type 'poweroff' to turn Frank off, 'reboot' to wake him, 'screensaver' for vibes.", fr: "Tapez 'poweroff' pour éteindre Frank, 'reboot' pour le réveiller, 'screensaver' pour l'ambiance." },
@@ -402,7 +417,7 @@ const CAT: Record<string, Bilingual> = {
   "slots.usage": { en: "→ slot <1|2|3> to switch", fr: "→ slot <1|2|3> pour changer" },
   "slots.empty": { en: "empty — starts fresh", fr: "vide — commencera à zéro" },
   "slots.current": { en: " (current)", fr: " (actuel)" },
-  "slots.switched": { en: "Switched to slot {n}. Welcome to your other life, Dave.", fr: "Passage à l'emplacement {n}. Bienvenue dans votre autre vie, Dave." },
+  "slots.switched": { en: "Switched to slot {n}. Welcome to your other life, {name}.", fr: "Passage à l'emplacement {n}. Bienvenue dans votre autre vie, {name}." },
   "slot.invalid": { en: "Usage: slot <1|2|3>", fr: "Usage : slot <1|2|3>" },
 
   // tutorial (relaunchable guide)
@@ -477,14 +492,14 @@ export const CMD_DETAIL: Record<string, Bilingual> = {
   coin: { en: "PUPPYCOIN's price drifts every few in-game hours. Buy low, sell high, lose everything. The classic.", fr: "Le prix de PUPPYCOIN varie toutes les quelques heures de jeu. Achetez bas, vendez haut, perdez tout. Le grand classique." },
   settings: { en: "Keys: theme, fontsize, anim, sound, lang (en|fr), ainame, aiurl, aiprompt. `settings ai` shows the AI sidekick's editable persona prompt.", fr: "Clés : theme, fontsize, anim, sound, lang (en|fr), ainame, aiurl, aiprompt. `settings ai` affiche le prompt modifiable de votre IA." },
   save: { en: "Your progress is saved to SQLite after every command anyway. This command exists so you feel in control.", fr: "Votre progression est sauvegardée dans SQLite après chaque commande de toute façon. Cette commande existe pour que vous vous sentiez maître à bord." },
-  reset: { en: "Deletes everything. Dave forgets everything. Frank remembers everything. Frank will never forget.", fr: "Tout efface. Dave oublie tout. Frank se souvient de tout. Frank n'oubliera jamais." },
+  reset: { en: "Deletes everything. The player forgets everything. Frank remembers everything. Frank will never forget.", fr: "Tout efface. Le joueur oublie tout. Frank se souvient de tout. Frank n'oubliera jamais." },
   whoami: { en: "A deep philosophical investigation into the nature of the self.", fr: "Une profonde enquête philosophique sur la nature du soi." },
   clear: { en: "Wipes the visible terminal. Your crimes remain on the database, as they should.", fr: "Efface le terminal visible. Vos crimes restent dans la base de données, comme il se doit." },
   credits: { en: "A brief and humble acknowledgment.", fr: "Un remerciement bref et humble." },
   about: { en: "The story so far: you were fired. That's it. That's the whole setup.", fr: "L'histoire jusqu'ici : vous avez été viré. Voilà. C'est toute la mise en place." },
   tor: { en: "Connect to hidden services. 'tor visit <site>' to open one, 'tor install <id>' to buy a program at the Bazaar. Programs give real effects.", fr: "Connectez-vous aux services cachés. 'tor visit <site>' pour en ouvrir un, 'tor install <id>' pour acheter un programme au Bazar. Les programmes ont de vrais effets." },
   choose: { en: "When your reputation peaks, three factions will make you an offer. Choosing shapes which missions you get later.", fr: "Quand votre réputation monte, trois factions vous feront une offre. Le choix oriente les missions que vous recevrez ensuite." },
-  career: { en: "Tracks hours played, hacks done, money earned, your best day, and your favorite target. The legend of Dave, in numbers.", fr: "Comptabilise les heures jouées, les hacks, l'argent gagné, votre meilleure journée et votre cible favorite. La légende de Dave, en chiffres." },
+  career: { en: "Tracks hours played, hacks done, money earned, your best day, and your favorite target. Your legend, in numbers.", fr: "Comptabilise les heures jouées, les hacks, l'argent gagné, votre meilleure journée et votre cible favorite. Votre légende, en chiffres." },
   slots: { en: "Three save slots, three lives. Each has its own SQLite file — switching is instant and safe.", fr: "Trois emplacements, trois vies. Chacun a son propre fichier SQLite — le changement est instantané et sans risque." },
   slot: { en: "Switches the active save slot. Your current slot is saved automatically before the switch.", fr: "Change l'emplacement actif. Votre emplacement actuel est sauvegardé automatiquement avant le changement." },
   poweroff: { en: "Frank shuts down. While off, every command is refused except 'reboot'. He deserves the rest.", fr: "Frank s'éteint. Éteint, toutes les commandes sont refusées sauf « reboot ». Il mérite ce repos." },

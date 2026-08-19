@@ -85,16 +85,23 @@ async function handler(req: Request): Promise<Response> {
     const body = await readJson(req);
     const g = loadGame(db);
     const obj = (body.settings ?? {}) as Record<string, unknown>;
-    const KEYS = new Set(["theme", "fontsize", "anim", "sound", "lang", "ainame", "aiurl", "aimodel", "aiprompt"]);
+    const KEYS = new Set(["theme", "fontsize", "anim", "sound", "lang", "ainame", "aiurl", "aimodel", "aiprompt", "sndvol", "ambient"]);
+    const BOOL_KEYS = new Set(["anim", "sound", "ambient"]);
     for (const [k, v] of Object.entries(obj)) {
       if (!KEYS.has(k)) continue;
-      g.flags[k] = typeof v === "boolean" ? v : String(v);
+      if (BOOL_KEYS.has(k)) g.flags[k] = v === true || v === "on" || v === "true";
+      else g.flags[k] = typeof v === "boolean" ? v : String(v);
     }
     saveGame(db, g);
     return Response.json({ state: snapshot(g) });
   }
 
   if (url.pathname === "/api/ai-status" && req.method === "GET") {
+    const probe = url.searchParams.get("url")?.trim();
+    if (probe) {
+      const online = await aiOnline({ aiurl: probe });
+      return Response.json({ online, url: probe });
+    }
     const g = loadGame(db);
     const online = await aiOnline(g.flags);
     return Response.json({ online, url: g.flags.aiurl || "http://127.0.0.1:3007" });

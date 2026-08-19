@@ -16,7 +16,7 @@ export const careerCmd: Command = {
     const lang = langOf(g);
     const c = careerOf(g);
     const lines = [];
-    lines.push(divider(t(lang, "career.title")));
+    lines.push(divider(t(lang, "career.title", { name: g.name })));
     const hours = (g.day - 1) * 24 + Math.floor(g.minutes / 60);
     lines.push(dim(t(lang, "career.level", { l: levelOf(g) })));
     lines.push(dim(t(lang, "career.hours", { h: hours, d: g.day })));
@@ -71,7 +71,7 @@ export const slotCmd: Command = {
     const n = parseInt(args[0] || "", 10);
     if (!n || n < 1 || n > 3) return { lines: [err(t(lang, "slot.invalid"))], minutes: 0 };
     return {
-      lines: [ok(t(lang, "slots.switched", { n }))],
+      lines: [ok(t(lang, "slots.switched", { n, name: g.name }))],
       minutes: 0,
       slotSwitchTo: n,
     };
@@ -89,7 +89,7 @@ export const poweroffCmd: Command = {
   run: (g) => {
     const lang = langOf(g);
     g.flags.powered = false;
-    const lines = t(lang, "power.off").split("\\n").map((s) => dim(s));
+    const lines = t(lang, "power.off", { name: g.name }).split("\\n").map((s) => dim(s));
     return { lines, minutes: 0 };
   },
 };

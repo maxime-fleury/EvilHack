@@ -3,7 +3,7 @@ import type { Line } from "./output";
 import { dim, err, info, money, ok, warn, title, blank, divider, fmtMoney, fmtClock } from "./output";
 import { NPCS, NEWS_FILLERS, TARGET_POOL, TOR_HIDDEN, FUN_HOSTS, getNpc, titleForRep } from "./world";
 import type { MissionRow } from "./missions";
-import { failMission, templateById, ensureOffers, missionTitle } from "./missions";
+import { failMission, templateById, ensureOffers, missionTitle, MISSION_TEMPLATES } from "./missions";
 import { ACHIEVEMENTS } from "./achievements";
 import { ARCS, arcState, isArcActive, isArcDone } from "./arcs";
 import type { Lang } from "./i18n";
@@ -83,11 +83,16 @@ export function hasProgram(g: Game, id: string): boolean {
   return ((g.flags.programs as string[]) || []).includes(id);
 }
 
+/** The RGB strip looks great but costs efficiency: -10% while it's on. */
+export function rgbPenalty(g: Game): number {
+  return g.rgb ? 0.9 : 1;
+}
+
 export function cpuPower(g: Game): number {
-  return 1 + g.cpu * 0.9;
+  return (1 + g.cpu * 0.9) * rgbPenalty(g);
 }
 export function miningRate(g: Game): number {
-  return 2 + g.gpu * 9 + g.toaster * 4 + g.vps * 1.5 + (hasProgram(g, "miner2") ? 3 : 0) + levelOf(g) * 0.5;
+  return (2 + g.gpu * 9 + g.toaster * 4 + g.vps * 1.5 + (hasProgram(g, "miner2") ? 3 : 0) + levelOf(g) * 0.5) * rgbPenalty(g);
 }
 export function parallelSlots(g: Game): number {
   return 1 + g.ram + g.vps;
@@ -122,6 +127,44 @@ export function sanitizeName(raw: string): string {
   let n = raw.trim().slice(0, 16);
   n = n.replace(/[^\p{L}\p{N}_\- ]/gu, "");
   return n.trim();
+}
+
+// ── Hat alignment: 0 = white hat, 50 = gray, 100 = black ──────────────────
+// Drifts with mission deliveries (see missions.ts hat + deliverOptions).
+
+export function moralityOf(g: Game): number {
+  const m = (g.flags.morality as number) ?? 25;
+  return Math.max(0, Math.min(100, m));
+}
+
+export type HatBand = "white" | "gray" | "black";
+
+export function hatBand(g: Game): HatBand {
+  const m = moralityOf(g);
+  if (m <= 33) return "white";
+  if (m >= 67) return "black";
+  return "gray";
+}
+
+/** Apply a morality shift (negative = toward white, positive = toward black). */
+export function shiftMorality(g: Game, shift: number, out: Line[]): void {
+  if (!shift) return;
+  const before = hatBand(g);
+  const cur = moralityOf(g) + shift;
+  g.flags.morality = Math.max(0, Math.min(100, cur));
+  const after = hatBand(g);
+  const lang = langOf(g);
+  const label = hatLabel(lang, after);
+  if (after !== before) {
+    out.push(warn(t(lang, "hat.band", { label })));
+    out.push(dim(t(lang, "hat.think", { label })));
+    if (!g.flags.aiReact) g.flags.aiReact = "morality";
+    logEvent(g, t(lang, "hat.log", { label }));
+  }
+}
+
+export function hatLabel(lang: Lang, band: HatBand): string {
+  return t(lang, band === "white" ? "hat.white" : band === "black" ? "hat.black" : "hat.gray");
 }
 
 // ── Skills (rise with use) ─────────────────────────────────────────────────
@@ -538,6 +581,8 @@ export function newGame(db: Database): Game {
       fontsize: "md",
       anim: true,
       sound: true,
+      sndvol: 0.5,
+      ambient: false,
       lang: "en",
       ainame: "Noro-chan",
       aiurl: "http://127.0.0.1:3007",
@@ -549,6 +594,7 @@ export function newGame(db: Database): Game {
       career: {},
       xp: 0,
       level: 1,
+      morality: 25,
       achievements: [],
       dayEarn: 0,
       lastEventDay: 0,
@@ -1066,7 +1112,45 @@ export function resolveHack(
   }
   addXp(g, isMission ? 30 : 20, out);
   if (!g.flags.aiReact) g.flags.aiReact = isMission ? "mission_done" : "hack_done";
+  // hacking a host can unlock a related mission (guaranteed, not lottery)
+  unlockMissionsOnHack(g, targetName, out);
   return skim;
+}
+
+/** Record the host as hacked and offer any mission gated on it (needsHack). */
+export function unlockMissionsOnHack(g: Game, targetName: string, out: Line[]): void {
+  const hacked = (g.flags.hackedTargets as string[]) || [];
+  if (!hacked.includes(targetName)) {
+    hacked.push(targetName);
+    g.flags.hackedTargets = hacked;
+  }
+  const present = new Set(g.missions.map((m) => m.template));
+  const lang = langOf(g);
+  for (const tmpl of MISSION_TEMPLATES) {
+    if (!tmpl.needsHack || tmpl.needsHack !== targetName) continue;
+    if (present.has(tmpl.id)) continue;
+    // the hack itself is the qualification — repReq is just a display hint here
+    if (g.missions.some((m) => m.template === tmpl.id)) continue;
+    g.missions.push({
+      id: g.missions.length + 1,
+      template: tmpl.id,
+      status: "offered",
+      offered_day: 1,
+      deadline_day: null,
+      giver: tmpl.giver.en,
+      target: tmpl.target,
+      difficulty: tmpl.difficulty,
+      minutes: tmpl.minutes,
+      payout: tmpl.payout,
+      rep: tmpl.rep,
+      style: tmpl.style,
+      heat: tmpl.heat,
+      flavor: JSON.stringify(tmpl.blurb),
+      steps: "[]",
+      title: tmpl.title.en,
+    });
+    out.push(info(t(lang, "hack.unlockMission", { title: missionTitle(lang, tmpl.id), id: g.missions.length })));
+  }
 }
 
 function completeJob(g: Game, j: JobRow, out: Line[]) {
@@ -1165,7 +1249,7 @@ export function dispatch(g: Game, raw: string): CmdResult {
 export async function resolve(g: Game, res: CmdResult): Promise<{ lines: Line[]; state: State; nudge?: { name: string; text: string } | null }> {
   if (res.reset) {
     // wipe the story but keep the player's preferences (language, theme, AI…)
-    const keep = ["lang", "theme", "fontsize", "anim", "sound", "ainame", "aiurl", "aimodel", "aiprompt"];
+    const keep = ["lang", "theme", "fontsize", "anim", "sound", "sndvol", "ambient", "ainame", "aiurl", "aimodel", "aiprompt"];
     const prefs: Record<string, unknown> = {};
     for (const k of keep) if (g.flags[k] !== undefined) prefs[k] = g.flags[k];
     resetDb(g.db);
@@ -1220,6 +1304,8 @@ export interface State {
   pendingChoice: string;
   xp: number;
   level: number;
+  morality: number;
+  hat: string;
   achievements: string[];
   achTotal: number;
   arcs: { id: string; title: string; status: string; step: number; total: number; steps: string[] }[];
@@ -1282,6 +1368,8 @@ export function snapshot(g: Game): State {
     pendingChoice: (g.flags.pendingChoice as string) || "",
     xp: xpOf(g),
     level: levelOf(g),
+    morality: moralityOf(g),
+    hat: hatLabel(lang, hatBand(g)),
     achievements: (g.flags.achievements as string[]) || [],
     achTotal: ACHIEVEMENTS.length,
     arcs: ARCS.filter((a) => {
@@ -1314,8 +1402,8 @@ export function snapshot(g: Game): State {
     settings: {
       theme: (g.flags.theme as string) || "green",
       fontsize: (g.flags.fontsize as string) || "md",
-      anim: g.flags.anim !== false,
-      sound: g.flags.sound !== false,
+      anim: g.flags.anim !== false && g.flags.anim !== "off",
+      sound: g.flags.sound !== false && g.flags.sound !== "off",
       lang: (g.flags.lang as Lang) || "en",
     },
     flags: {

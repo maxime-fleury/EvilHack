@@ -1,6 +1,7 @@
 import type { Line } from "./output";
 import { dim, info, warn } from "./output";
 import type { Game } from "./engine";
+import { hatBand, hatLabel } from "./engine";
 import type { Bilingual, Lang } from "./i18n";
 import { pick } from "./i18n";
 
@@ -64,6 +65,7 @@ const AI_REACT_DESC: Record<string, Bilingual> = {
   big_sale: { en: "sold a dossier for serious cash", fr: "a vendu un dossier contre une grosse somme" },
   first_hack: { en: "committed his very first hack", fr: "a commis son tout premier hack" },
   vps_bought: { en: "rented a VPS server for parallel ops", fr: "a loué un serveur VPS pour des ops en parallèle" },
+  morality: { en: "just crossed a moral line — his hat alignment changed", fr: "vient de franchir une ligne morale — son alignement a changé" },
 };
 
 /** Default AI persona, per language. A custom prompt (flags.aiprompt) overrides it. */
@@ -365,7 +367,11 @@ export async function maybeNudge(g: Game, out: Line[]): Promise<Nudge | null> {
       ? `${pname} ${pick(lang, desc)}. Commente son action avec humour et taquinerie, 1-2 phrases, reste dans ton personnage.${gameDigest(g, lang)}`
       : `${pname} just ${pick(lang, desc)}. Comment on his action with humor and teasing, 1-2 sentences, stay in character.${gameDigest(g, lang)}`;
     const text = await askAI(f, [{ role: "user", content: ctx }], 12000, pname);
-    const final = (text || curatedReact(lang, react)).replace(/\bDave\b/g, pname);
+    let fallback = curatedReact(lang, react);
+    if (react === "morality") {
+      fallback = fallback.replace("{hat}", hatLabel(lang, hatBand(g)));
+    }
+    const final = (text || fallback).replace(/\bDave\b/g, pname);
     pushHistory(g, "assistant", final);
     out.push(info(`💬 ${name}: ${final}`));
     return { name, text: final };
@@ -413,6 +419,7 @@ const REACT_CURATED: Record<string, Bilingual> = {
   big_sale: { en: "Sold the dirt for real money~ look at you, a tabloid's favorite source. Careful: they know your face now. Probably. I don't know what you look like. That's the point.", fr: "Vendu les secrets contre du vrai argent~ regarde-toi, la source préférée des tabloïds. Attention : ils connaissent ton visage maintenant. Peut-être. Je sais pas à quoi tu ressembles. C'est le principe." },
   first_hack: { en: "FIRST BLOOD~! Your first hack, Dave. I'm so proud I might need a moment. (Frank already had his moment. It was a long beep.)", fr: "PREMIER SANG~! Ton premier hack, Dave. Je suis si fière que je vais avoir besoin d'un moment. (Frank a déjà eu le sien. Un long bip.)" },
   vps_bought: { en: "A VPS, ooh la la~ parallel crimes AND less heat? You're becoming a professional. Frank upgraded his fan. He believes in you now.", fr: "Un VPS, oh là là~ des crimes en parallèle ET moins de chaleur ? Tu deviens un pro. Frank a amélioré son ventilateur. Il croit en toi maintenant." },
+  morality: { en: "Ohh~ look at you, a real {hat} now. Frank is… adjusting his opinion of you. Keep it up and we'll need a bigger moral compass~", fr: "Ohh~ regarde-toi, un vrai {hat} maintenant. Frank… ajuste son opinion sur toi. Continue comme ça et il faudra une boussole morale plus grande~" },
 };
 
 /** Used by /api/chat — the user talks to the AI in the Chat panel. */

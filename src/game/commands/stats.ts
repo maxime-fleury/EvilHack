@@ -1,6 +1,6 @@
 import type { Command } from "./types";
 import { blank, dim, divider, info, money, ok, warn, title, fmtMoney, fmtClock } from "../output";
-import { cpuPower, miningRate, parallelSlots, heatMult, hackMinutes, snapshot, langOf, skillLevel, factionRep, careerOf, xpOf, levelOf, xpIntoLevel, xpForNext } from "../engine";
+import { cpuPower, miningRate, parallelSlots, heatMult, hackMinutes, snapshot, langOf, skillLevel, factionRep, careerOf, xpOf, levelOf, xpIntoLevel, xpForNext, moralityOf, hatBand, hatLabel } from "../engine";
 import { ACHIEVEMENTS } from "../achievements";
 import { t } from "../i18n";
 
@@ -20,6 +20,7 @@ export const statsCmd: Command = {
     lines.push(money(`   Money: ${fmtMoney(g.money)}    Rep: ${g.rep}    Style: ${g.style}`));
     lines.push(hot);
     lines.push(dim(t(lang, "stats.title", { title: g.titles[g.titles.length - 1] || s.title })));
+    lines.push(dim(t(lang, "hat.bar", { label: hatLabel(lang, hatBand(g)), m: moralityOf(g) })));
     lines.push(blank);
     lines.push(divider(t(lang, "stats.hardware")));
     lines.push(dim(t(lang, "stats.cpu", { cpu: ["Potato 2000", "Toaster X", "Hamster i5", "The Boring i9", "Quantum Potato"][g.cpu], p: cpuPower(g).toFixed(2) })));
@@ -77,7 +78,7 @@ export const statsCmd: Command = {
     }
     // career
     lines.push(blank);
-    lines.push(divider(t(lang, "career.title")));
+    lines.push(divider(t(lang, "career.title", { name: g.name })));
     const c = careerOf(g);
     lines.push(dim(t(lang, "career.hacks", { n: c.hacksDone || 0 })));
     lines.push(dim(t(lang, "career.moneyEarned", { m: fmtMoney(c.moneyEarned || 0) })));

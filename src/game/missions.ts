@@ -21,6 +21,8 @@ export interface DeliverOption {
   faction?: { branch: string; n: number };
   flag?: { key: string; value: boolean };
   flag2?: { key: string; value: boolean };
+  /** Morality shift: positive = toward black hat, negative = toward white. */
+  hatShift?: number;
 }
 
 export interface MissionTemplate {
@@ -41,12 +43,16 @@ export interface MissionTemplate {
   needsVps?: number;
   needsExploit?: string;
   needsBranch?: string;
+  /** Target name — guaranteed to be offered once you've successfully hacked this host. */
+  needsHack?: string;
   /** NPC id — only offered once you hold a full 3/3 dossier on them. */
   needsDossier?: string;
   /** Faction-exclusive: offered once your faction reputation with that branch reaches rep. */
   needsFactionRep?: { branch: string; rep: number };
   /** The "MAIS NON!" reveal shown at delivery. */
   twist?: Bilingual;
+  /** Morality tint of the job itself: "white" | "gray" | "black". */
+  hat?: "white" | "gray" | "black";
   /** Moral fork at delivery: pick with `missions deliver <id> <key>`. */
   deliverOptions?: DeliverOption[];
   success: Bilingual;
@@ -564,6 +570,7 @@ export const MISSION_TEMPLATES: MissionTemplate[] = [
     title: { en: "Going It Alone", fr: "En Solo" },
     giver: { en: "Yourself (empowering)", fr: "Vous-même (responsabilisant)" },
     repReq: 25,
+    hat: "white",
     blurb: {
       en: "You turned down every crew. Steal MegaCorp's entire snack budget and redirect it to charity. Lone wolf energy.",
       fr: "Vous avez refusé toutes les équipes. Volez le budget snacks entier de MegaCorp et reversez-le à une œuvre caritative. Énergie de loup solitaire.",
@@ -1078,6 +1085,430 @@ export const MISSION_TEMPLATES: MissionTemplate[] = [
       fr: "Le maître chanteur fuit l'archive « pour la culture ». Le chat devient célèbre du jour au lendemain. La cosplayeuse triple ses abonnés. Elle est furieuse que ce ne soit pas son plan.",
     },
   },
+  // ── GEEK/NERD CONTRACTS — sudo, saves, and legacy code ───────────────────
+  {
+    id: "twitchpoke",
+    title: { en: "The Legendary Save", fr: "La Sauvegarde Légendaire" },
+    giver: { en: "A trembling 90s kid", fr: "Un enfant des 90s tremblant" },
+    repReq: 16,
+    blurb: {
+      en: "A man's original save file from a 90s monster-catching game is hosted on a museum server — untouched for 20 years, beaten once, by a collective of thousands of strangers typing nonsense. He wants it back. 'It's my childhood,' he sobs. It's 4 KB. He would pay anything. He is.",
+      fr: "La sauvegarde originale d'un homme sur un jeu de monstres des années 90 est hébergée sur un serveur musée — intacte depuis 20 ans, terminée une fois, par des milliers d'inconnus tapant n'importe quoi. Il la veut. « C'est mon enfance », sanglote-t-il. Elle fait 4 Ko. Il paierait n'importe quoi. Il paie.",
+    },
+    target: "The Museum Server",
+    difficulty: 3,
+    minutes: 80,
+    payout: 700,
+    rep: 5,
+    style: 6,
+    heat: 6,
+    deadlineDays: 3,
+    success: {
+      en: "The save is back — 4 KB of pure nostalgia. The client cries for an hour, then sends you a photo of his old Game Boy. It's in a display case. He's wearing white gloves. You did good.",
+      fr: "La sauvegarde est revenue — 4 Ko de pure nostalgie. Le client pleure pendant une heure, puis vous envoie une photo de sa vieille console. Elle est sous vitrine. Il porte des gants blancs. Vous avez bien fait.",
+    },
+    fail: {
+      en: "You pulled the wrong file — a corrupted 40 KB save named 'do_not_use'. The client now has someone else's childhood. He doesn't notice. The monster names are all 'AAAA'. Suspicious.",
+      fr: "Vous avez récupéré le mauvais fichier — une sauvegarde corrompue de 40 Ko nommée « ne_pas_utiliser ». Le client a maintenant l'enfance de quelqu'un d'autre. Il ne remarque rien. Les noms des monstres sont tous « AAAA ». Suspect.",
+    },
+  },
+  {
+    id: "vimtax",
+    title: { en: "The Vim License Fee", fr: "La Licence Vim" },
+    giver: { en: "A furious Linux user group", fr: "Un groupe d'utilisateurs Linux furieux" },
+    repReq: 18,
+    blurb: {
+      en: "A local Linux user group's server is held hostage by a ransomware that displays 'PLEASE PAY THE VIM LICENSE FEE — press :q to accept terms'. Their sysadmin is 72 and refuses to 'negotiate with terrorists'. They hire you. 'Just get the files back. And maybe install nano.'",
+      fr: "Le serveur d'un groupe d'utilisateurs Linux est pris en otage par un rançongiciel qui affiche « VEUILLEZ PAYER LA LICENCE VIM — tapez :q pour accepter les conditions ». Leur admin a 72 ans et refuse de « négocier avec des terroristes ». Ils vous engagent. « Récupérez les fichiers. Et installez nano, peut-être. »",
+    },
+    target: "The Linux User Group Server",
+    difficulty: 4,
+    minutes: 110,
+    payout: 1200,
+    rep: 7,
+    style: 8,
+    heat: 8,
+    needsExploit: "zero",
+    deadlineDays: 4,
+    success: {
+      en: "Files recovered. The ransomware's decryptor was a shell script with one command: 'rm -rf /tmp/fake_ransom'. The hackers were using Vim and got lost in it for three days. The LUG installs nano. Peace at last.",
+      fr: "Fichiers récupérés. Le déchiffreur du rançongiciel était un script shell avec une seule commande : « rm -rf /tmp/faux_rancon ». Les hackers utilisaient Vim et s'y sont perdus trois jours. Le LUG installe nano. La paix enfin.",
+    },
+    fail: {
+      en: "You accidentally executed ':q' on the server's terminal. Nothing happened — because it was already running Vim. On your connection. You are now in an infinite Vim session and cannot leave. The LUG respects your sacrifice.",
+      fr: "Vous avez exécuté « :q » par erreur sur le terminal du serveur. Rien ne s'est passé — parce qu'il tournait déjà sous Vim. Sur votre connexion. Vous êtes dans une session Vim infinie et ne pouvez pas en sortir. Le LUG respecte votre sacrifice.",
+    },
+  },
+  {
+    id: "minecraft",
+    title: { en: "The 4,000-Hour World", fr: "Le Monde de 4 000 Heures" },
+    giver: { en: "A grieving block-builder", fr: "Un bâtisseur de blocs en deuil" },
+    repReq: 20,
+    blurb: {
+      en: "A client spent 4,000 hours building a pixel-art castle in a block-building game. The server shut down and the world is trapped on a dead admin's NAS. 'I don't care about the money,' he says. 'I need my castle. The bridge took 300 hours alone.'",
+      fr: "Un client a passé 4 000 heures à construire un château en pixel-art dans un jeu de blocs. Le serveur a fermé et le monde est piégé sur le NAS d'un admin mort. « Je me fiche de l'argent », dit-il. « Il me faut mon château. Le pont a pris 300 heures à lui seul. »",
+    },
+    target: "The NAS of Doom",
+    difficulty: 4,
+    minutes: 130,
+    payout: 1400,
+    rep: 8,
+    style: 10,
+    heat: 9,
+    needsVps: 1,
+    deadlineDays: 5,
+    success: {
+      en: "The world is extracted — 2.3 GB of pure blocky dedication. The client rebuilds the server overnight and logs in. He stands on his bridge for ten minutes without moving. Then he sends you the coordinates. You visit. The sunset is made of gold blocks.",
+      fr: "Le monde est extrait — 2,3 Go de pure dévotion en blocs. Le client reconstruit le serveur en une nuit et se connecte. Il reste dix minutes immobile sur son pont. Puis il vous envoie les coordonnées. Vous visitez. Le coucher de soleil est en blocs d'or.",
+    },
+    fail: {
+      en: "The NAS was a decoy — you extracted the admin's 1,200-hour collection of cat JPEGs instead. The client cries. The cats are beautiful, but he doesn't want cats. He wants his castle. The castle remains.",
+      fr: "Le NAS était un leurre — vous avez extrait la collection de 1 200 heures de JPEG de chats de l'admin à la place. Le client pleure. Les chats sont magnifiques, mais il ne veut pas de chats. Il veut son château. Le château demeure.",
+    },
+  },
+  {
+    id: "hackerman",
+    title: { en: "The Hackerman Ransomware", fr: "Le Rançongiciel Hackerman" },
+    giver: { en: "A startup in full panic", fr: "Une startup en panique totale" },
+    repReq: 25,
+    blurb: {
+      en: "A rival 'hacktivist' crew deployed a ransomware that types 'I'M IN' in green on every infected screen and demands payment in a fake currency called 'CryptoCoinX'. The startup's CTO — a man named Kevin who says 'hashtag' out loud — wants the decryptor. 'We have 4 days of runway,' he weeps.",
+      fr: "Un crew « hacktiviste » rival a déployé un rançongiciel qui tape « J'SUIS DEDANS » en vert sur chaque écran infecté et demande un paiement en fausse monnaie appelée « CryptoCoinX ». Le CTO de la startup — un homme nommé Kevin qui dit « hashtag » à voix haute — veut le déchiffreur. « Il nous reste 4 jours de trésorerie », pleure-t-il.",
+    },
+    target: "The Hackerman C2",
+    difficulty: 5,
+    minutes: 150,
+    payout: 2100,
+    rep: 10,
+    style: 12,
+    heat: 10,
+    needsBotnet: true,
+    needsExploit: "zero",
+    deadlineDays: 5,
+    success: {
+      en: "Decryptor recovered. It was a text file that just said 'it was a prank, bro'. The crew's C2 server had one photo: a cat with sunglasses. Kevin still says 'hashtag', but now he respects you. 'Hashtag legend', he says. You feel nothing.",
+      fr: "Déchiffreur récupéré. C'était un fichier texte qui disait juste « c'était une blague, frère ». Le serveur C2 du crew contenait une seule photo : un chat avec des lunettes de soleil. Kevin dit toujours « hashtag », mais maintenant il vous respecte. « Hashtag légende », dit-il. Vous ne ressentez rien.",
+    },
+    fail: {
+      en: "You triggered the ransomware's failsafe: every screen in the startup now displays 'I'M IN' in green, including the coffee machine. Kevin applauds, thinking it's a feature. You leave before the board meeting.",
+      fr: "Vous avez déclenché le fail-safe du rançongiciel : chaque écran de la startup affiche « J'SUIS DEDANS » en vert, y compris la machine à café. Kevin applaudit, croyant à une fonctionnalité. Vous partez avant la réunion du board.",
+    },
+  },
+  {
+    id: "wipcommit",
+    title: { en: "The Legacy Repo", fr: "Le Repo Hérité" },
+    giver: { en: "A digital archaeologist", fr: "Une archéologue du numérique" },
+    repReq: 28,
+    blurb: {
+      en: "A 15-year-old code repository sits on a dead company's server. The only commit message in 7 years: 'wip'. A digital archaeologist wants it for her PhD. 'It's a time capsule of human hubris,' she says. 'Also, the code might summon something. We're not sure.'",
+      fr: "Un dépôt de code vieux de 15 ans dort sur le serveur d'une entreprise morte. Le seul message de commit en 7 ans : « wip ». Une archéologue du numérique le veut pour sa thèse. « C'est une capsule temporelle de l'orgueil humain », dit-elle. « Aussi, le code pourrait invoquer quelque chose. On n'est pas sûrs. »",
+    },
+    target: "The Dead Company Server",
+    difficulty: 5,
+    minutes: 170,
+    payout: 2500,
+    rep: 12,
+    style: 10,
+    heat: 12,
+    needsExploit: "zero",
+    needsVps: 2,
+    deadlineDays: 6,
+    success: {
+      en: "The repo is yours — 14,000 commits, all 'wip', and one file named 'FINAL_v2_REAL_really_final.zip'. The archaeologist names her thesis after you. The code did not summon anything. Probably. (The server fan is still spinning in your direction.)",
+      fr: "Le repo est à vous — 14 000 commits, tous « wip », et un fichier nommé « FINAL_v2_VERITABLE_vraiment_final.zip ». L'archéologue nomme sa thèse d'après vous. Le code n'a rien invoqué. Probablement. (Le ventilateur du serveur tourne toujours dans votre direction.)",
+    },
+    fail: {
+      en: "You accidentally ran the repo's 'deploy.sh' from 2011. It deployed. Something is now hosting a service you did not create. It returns '200 OK' with a single word: 'wip'. You do not investigate. Some things are better left as 'wip'.",
+      fr: "Vous avez exécuté par accident le « deploy.sh » du repo, daté de 2011. Ça a déployé. Quelque chose héberge maintenant un service que vous n'avez pas créé. Il renvoie « 200 OK » avec un seul mot : « wip ». Vous n'enquêtez pas. Certaines choses sont mieux laissées en « wip ».",
+    },
+  },
+  {
+    id: "goldfarm",
+    title: { en: "The Gold Farm Heist", fr: "Le Casse de la Ferme à Or" },
+    giver: { en: "A gold seller with a business plan", fr: "Un vendeur d'or avec un business plan" },
+    repReq: 14,
+    blurb: {
+      en: "A WoW private server's admin 'confiscated' 40,000 gold from a hardworking gold farmer. 'It was a glitch,' the admin said. The farmer wants it back, plus interest. 'I have a reputation to maintain. People pre-order from me.'",
+      fr: "L'admin d'un serveur WoW privé a « confisqué » 40 000 pièces d'or à un fermier d'or qui travaillait dur. « C'était un bug », a dit l'admin. Le fermier veut le récupérer, plus les intérêts. « J'ai une réputation à tenir. Les gens précommandent chez moi. »",
+    },
+    target: "The Private WoW Server",
+    difficulty: 3,
+    minutes: 90,
+    payout: 780,
+    rep: 6,
+    style: 6,
+    heat: 7,
+    needsExploit: "sql",
+    deadlineDays: 3,
+    success: {
+      en: "The gold is back — 42,000 pieces after 'interest'. The farmer tips you with 500 gold. You don't play WoW. You ask what it's for. 'You can buy a mount,' he says. 'Or sell it. Like a professional.'",
+      fr: "L'or est revenu — 42 000 pièces après « intérêts ». Le fermier vous donne 500 pièces d'or de pourboire. Vous ne jouez pas à WoW. Vous demandez à quoi ça sert. « Tu peux acheter une monture », dit-il. « Ou le vendre. Comme un pro. »",
+    },
+    fail: {
+      en: "The admin detects you and bans your IP from the server. 'Nice try, gold farmer,' says the ban message. You are now locked out of a game you don't even play. The farmer understands. 'Rival guild,' he mutters, nodding wisely.",
+      fr: "L'admin vous détecte et bannit votre IP du serveur. « Bien essayé, fermier d'or », dit le message de bannissement. Vous êtes maintenant banni d'un jeu auquel vous ne jouez même pas. Le fermier comprend. « Guilde rivale », murmure-t-il, en hochant la tête d'un air sage.",
+    },
+  },
+  {
+    id: "mjtroll",
+    title: { en: "Operation: Troll the GM", fr: "Opération : Troller le MJ" },
+    giver: { en: "A guild of extremely petty players", fr: "Une guilde de joueurs extrêmement mesquins" },
+    repReq: 16,
+    blurb: {
+      en: "A WoW private server's GM is a power-tripping teenager who once banned a player for 'looking at him wrong in Stormwind'. The guild wants you to hack his admin console and rename his account to 'xX_ShadowHunter_Xx'. 'He'll never find out,' they promise. He will. That's the point.",
+      fr: "Le MJ d'un serveur WoW privé est un ado en pleine crise de pouvoir qui a un jour banni un joueur pour « l'avoir mal regardé à Hurlevent ». La guilde veut que vous piratiez sa console d'admin et renommiez son compte en « xX_ShadowHunter_Xx ». « Il ne s'en rendra jamais compte », promettent-ils. Il s'en rendra compte. C'est le but.",
+    },
+    target: "The Private WoW Server",
+    difficulty: 4,
+    minutes: 110,
+    payout: 980,
+    rep: 7,
+    style: 14,
+    heat: 8,
+    needsExploit: "zero",
+    deadlineDays: 4,
+    success: {
+      en: "The GM now leads raids as xX_ShadowHunter_Xx. He thinks it's 'a new edgy title the devs gave me'. The guild screenshots everything. They print it and frame it. You are a hero of the people. The people are 14 and very petty.",
+      fr: "Le MJ mène désormais les raids en tant que xX_ShadowHunter_Xx. Il croit que c'est « un nouveau titre edgy que les devs m'ont donné ». La guilde capture tout. Ils impriment et encadrent. Vous êtes un héros du peuple. Le peuple a 14 ans et il est très mesquin.",
+    },
+    fail: {
+      en: "You renamed the wrong account — the guild master's. He now leads raids as xX_ShadowHunter_Xx and is weirdly into it. The guild pretends it never happened. The GM sends you a friend request. You do not accept.",
+      fr: "Vous avez renommé le mauvais compte — celui du maître de guilde. Il mène désormais les raids en tant que xX_ShadowHunter_Xx et ça lui plaît étrangement. La guilde fait comme si rien ne s'était passé. Le MJ vous envoie une demande d'ami. Vous ne l'acceptez pas.",
+    },
+  },
+  {
+    id: "chinesegold",
+    title: { en: "The Scammer's Ledger", fr: "Le Grand Livre de l'Arnaqueur" },
+    giver: { en: "A betrayed level-60 mage", fr: "Un mage niveau 60 trahi" },
+    repReq: 18,
+    blurb: {
+      en: "A 'reputable' WoW gold seller scammed a mage out of $300 — he promised 'instant delivery, no questions'. The mage got a screenshot of gold that was never his. The client wants you to wipe the scammer's account AND steal his customer list. 'So I can warn them,' he says. You both know it's for the mailing list.",
+      fr: "Un « réputé » vendeur d'or WoW a arnaqué un mage de 300 $ — il promettait « livraison instantanée, sans questions ». Le mage a reçu une capture d'écran d'or qui n'était jamais à lui. Le client veut que vous vidiez le compte de l'arnaqueur ET que vous voliez sa liste de clients. « Pour les prévenir », dit-il. Vous savez tous les deux que c'est pour la liste de diffusion.",
+    },
+    target: "The Private WoW Server",
+    difficulty: 4,
+    minutes: 120,
+    payout: 1250,
+    rep: 8,
+    style: 9,
+    heat: 9,
+    needsExploit: "sql",
+    needsVps: 1,
+    deadlineDays: 4,
+    success: {
+      en: "The scammer's account is at 0 gold and his customer list is yours. The mage sends each customer a 'friendly warning' email that is, in fact, an advertisement for his own services. 'The free market,' he says, delighted. You've created a monster. A level-60 monster.",
+      fr: "Le compte de l'arnaqueur est à 0 pièce d'or et sa liste de clients est à vous. Le mage envoie à chaque client un « avertissement amical » qui est, en réalité, une publicité pour ses propres services. « Le libre marché », dit-il, ravi. Vous avez créé un monstre. Un monstre niveau 60.",
+    },
+    fail: {
+      en: "The scammer's server logs everything. He now knows your real IP and sends you a trade request with 1 copper and the message 'nice try'. You feel personally attacked by a man you've never met in a game you don't play.",
+      fr: "Le serveur de l'arnaqueur journalise tout. Il connaît maintenant votre vraie IP et vous envoie une demande d'échange avec 1 pièce de cuivre et le message « bien essayé ». Vous vous sentez personnellement attaqué par un homme que vous n'avez jamais rencontré dans un jeu auquel vous ne jouez pas.",
+    },
+  },
+  {
+    id: "guildbank",
+    title: { en: "The Guild Bank Embezzlement", fr: "Le Détournement de Banque de Guilde" },
+    giver: { en: "A guild officer with a gambling problem", fr: "Un officier de guilde avec un problème de jeu" },
+    repReq: 22,
+    blurb: {
+      en: "A guild officer 'borrowed' 15,000 gold from the guild bank to bet on a duel tournament. He lost. The guild master wants the gold back before anyone notices, and the officer's debt 'forgotten'. 'Just move some numbers,' he says. 'No one checks the logs. We're all too busy raiding.'",
+      fr: "Un officier de guilde a « emprunté » 15 000 pièces d'or de la banque de guilde pour parier sur un tournoi de duels. Il a perdu. Le maître de guilde veut récupérer l'or avant que quiconque ne remarque, et que la dette de l'officier soit « oubliée ». « Déplace juste des chiffres », dit-il. « Personne ne regarde les logs. On est tous trop occupés à raider. »",
+    },
+    target: "The Private WoW Server",
+    difficulty: 4,
+    minutes: 130,
+    payout: 1600,
+    rep: 9,
+    style: 10,
+    heat: 10,
+    needsExploit: "zero",
+    needsVps: 1,
+    deadlineDays: 5,
+    success: {
+      en: "The gold is back, the logs are clean, and the officer keeps his rank. He thanks you with 1,000 gold and a promise to 'never gamble again'. He gambles again two days later. You are not the bank. You are not the police. You are a numbers mover.",
+      fr: "L'or est revenu, les logs sont propres et l'officier garde son grade. Il vous remercie avec 1 000 pièces d'or et une promesse de « ne plus jamais parier ». Il reparie deux jours plus tard. Vous n'êtes pas la banque. Vous n'êtes pas la police. Vous êtes un déplaceur de chiffres.",
+    },
+    fail: {
+      en: "The logs were checked. The guild master now knows about the embezzlement, the duel betting, AND that you helped. He demotes the officer, bans you from the server, and posts your IP in general chat. The players think it's a meme. It is not a meme.",
+      fr: "Les logs ont été vérifiés. Le maître de guilde est maintenant au courant du détournement, des paris sur les duels ET de votre aide. Il rétrograde l'officier, vous bannit du serveur et poste votre IP dans le chat général. Les joueurs pensent que c'est un meme. Ce n'est pas un meme.",
+    },
+  },
+  // ── LIFE RUINER CONTRACTS — karma with a crowbar ──────────────────────────
+  {
+    id: "cheaterexposed",
+    title: { en: "The Serial Cheater's Inbox", fr: "La Boîte Mail de l'Infidèle Série" },
+    giver: { en: "A jilted ex with receipts", fr: "Un ex trompé avec des preuves" },
+    repReq: 15,
+    blurb: {
+      en: "A man has been running three relationships at once — and a wedding plan with one of them. The ex wants his entire dating history, his 'secret business trips' calendar, and the emails to all three women dumped into one very public inbox. 'Ruin him,' she says calmly. 'I'll handle the rest. I have the group chat.'",
+      fr: "Un homme mène trois relations en parallèle — et prépare un mariage avec l'une d'elles. L'ex veut toute son historique de rencontres, son calendrier de « voyages d'affaires secrets » et les mails aux trois femmes déversés dans une boîte mail très publique. « Détruis-le », dit-elle calmement. « Je m'occupe du reste. J'ai le groupe. »",
+    },
+    target: "The Office Server",
+    difficulty: 3,
+    minutes: 85,
+    payout: 900,
+    rep: 6,
+    style: 8,
+    heat: 7,
+    needsExploit: "sql",
+    deadlineDays: 3,
+    hat: "gray",
+    needsHack: "The Office Server",
+    success: {
+      en: "The emails are out. The wedding is off, three flights were cancelled, and the man is now 'working from home' — his home being his mother's couch. The ex sends you a cake. It says 'thanks, bestie'. You've never met her. You feel like you have.",
+      fr: "Les mails sont sortis. Le mariage est annulé, trois vols ont été annulés, et l'homme « travaille depuis chez lui » — son chez-lui étant le canapé de sa mère. L'ex vous envoie un gâteau. Il est écrit « merci, bestie ». Vous ne l'avez jamais rencontrée. Vous avez l'impression de l'avoir déjà fait.",
+    },
+    fail: {
+      en: "You leaked the emails to the wrong address — the man's own. He now knows everything and gets to the wedding first. He marries all three women in three cities over three weekends. The ex sends you a spreadsheet of her disappointment.",
+      fr: "Vous avez envoyé les mails à la mauvaise adresse — celle de l'homme lui-même. Il sait maintenant tout et arrive au mariage le premier. Il épouse les trois femmes dans trois villes sur trois week-ends. L'ex vous envoie un tableur de sa déception.",
+    },
+  },
+  {
+    id: "badkarma",
+    title: { en: "The Parking Ticket King", fr: "Le Roi des PV de Stationnement" },
+    giver: { en: "A neighborhood of petty vigilantes", fr: "Un quartier de justiciers mesquins" },
+    repReq: 17,
+    blurb: {
+      en: "A man parks his giant truck across two disabled spots every day 'just to prove he can'. The neighborhood has had enough. They pooled money to have you ruin him — subtly. Not jail. Just… inconvenience. Forever. 'Make his life annoying in a way he can't prove,' says the retired accountant leading the fund.",
+      fr: "Un homme gare son énorme pick-up sur deux places handicapées chaque jour « juste pour prouver qu'il le peut ». Le quartier en a assez. Ils ont misé de l'argent pour que vous le ruiniez — subtilement. Pas la prison. Juste… des inconvénients. Pour toujours. « Rends sa vie agaçante d'une manière qu'il ne peut pas prouver », dit le comptable à la retraite qui dirige la cagnotte.",
+    },
+    target: "The Municipal Grid",
+    difficulty: 4,
+    minutes: 110,
+    payout: 1150,
+    rep: 7,
+    style: 12,
+    heat: 8,
+    needsExploit: "zero",
+    deadlineDays: 4,
+    hat: "gray",
+    needsHack: "The Municipal Grid",
+    success: {
+      en: "His truck now gets a ticket every single day — because the municipal system 'randomly' flags his plates. His car insurance went up 300%. His GPS reroutes him past every speed camera in the city. He moved. The neighborhood threw a block party. You were not invited, for security reasons. The accountant mails you a fruit basket.",
+      fr: "Son pick-up reçoit désormais un PV chaque jour — parce que le système municipal « flag au hasard » sa plaque. Son assurance auto a augmenté de 300 %. Son GPS le reroute devant chaque radar de la ville. Il a déménagé. Le quartier a fait une fête de rue. Vous n'étiez pas invité, par sécurité. Le comptable vous envoie un panier de fruits.",
+    },
+    fail: {
+      en: "You flagged the wrong plates — the mayor's. The mayor now gets tickets daily, his GPS avoids nothing, and he declares a 'war on hackers'. Your face is on a poster in city hall. It's a good drawing, actually.",
+      fr: "Vous avez flag les mauvaises plaques — celles du maire. Le maire reçoit désormais des PV chaque jour, son GPS n'évite rien, et il déclare une « guerre aux hackers ». Votre visage est sur une affiche à la mairie. C'est un bon dessin, en fait.",
+    },
+  },
+  {
+    id: "vigilante",
+    title: { en: "The Collector's Confession", fr: "La Confession du Collectionneur" },
+    giver: { en: "A vigilante with a folder", fr: "Un justicier avec un dossier" },
+    repReq: 20,
+    blurb: {
+      en: "A man in a position of trust has been secretly collecting 'private photos' of minors. The vigilante has proof. He wants you to crack the man's hidden vault, extract everything, and deliver it to the authorities — cleanly, traceably, with his name attached. 'I want him to know it was exposure, not luck.'",
+      fr: "Un homme en position de confiance collectionne secrètement des « photos privées » de mineurs. Le justicier a les preuves. Il veut que vous fissuriez le coffre caché de l'homme, extrayiez tout, et le livriez aux autorités — proprement, traçablement, avec son nom attaché. « Je veux qu'il sache que c'est une exposition, pas de la chance. »",
+    },
+    target: "The Hidden Vault",
+    difficulty: 4,
+    minutes: 140,
+    payout: 1850,
+    rep: 10,
+    style: 5,
+    heat: 12,
+    needsExploit: "zero",
+    needsVps: 2,
+    deadlineDays: 5,
+    hat: "white",
+    needsHack: "The Hidden Vault",
+    success: {
+      en: "The vault cracks. Everything goes to the authorities — with receipts. The man is arrested at work, in front of everyone. The vigilante sends you one message: 'He'll rot. Thank you.' You delete the folder without opening it. Some things you don't need to see. The world is slightly cleaner tonight.",
+      fr: "Le coffre s'ouvre. Tout part aux autorités — avec reçus. L'homme est arrêté au travail, devant tout le monde. Le justicier vous envoie un seul message : « Il va pourrir. Merci. » Vous supprimez le dossier sans l'ouvrir. Certaines choses n'ont pas besoin d'être vues. Le monde est un peu plus propre ce soir.",
+    },
+    fail: {
+      en: "The vault had a tripwire — the man is alerted and wipes everything in 30 seconds. The vigilante's proof is now gone. He goes quiet for a week, then sends you a single word: 'Find him.' You have a new mission and a very bad feeling. The man knows your face now. Probably.",
+      fr: "Le coffre avait un piège — l'homme est alerté et efface tout en 30 secondes. Les preuves du justicier ont disparu. Il reste silencieux une semaine, puis vous envoie un seul mot : « Trouve-le. » Vous avez une nouvelle mission et un très mauvais pressentiment. L'homme connaît votre visage maintenant. Peut-être.",
+    },
+  },
+  // ── HACK-UNLOCKED CONTRACTS — break the box, find the job ───────────────
+  {
+    id: "severance",
+    title: { en: "The Severance Package", fr: "Le Paquet de Départ" },
+    giver: { en: "A bitter ex-colleague", fr: "Un ex-collègue aigri" },
+    repReq: 5,
+    blurb: {
+      en: "You broke into MegaCorp HQ for fun — and found something. Your old team's budget reports show a 'severance package' line item that's… suspiciously round. An ex-colleague who still works there wants you to pull the full records. 'They've been firing people for years with the same number. It's a pattern, not a coincidence.'",
+      fr: "Vous vous êtes introduit dans le siège de MegaCorp pour le fun — et vous avez trouvé quelque chose. Les rapports budgétaires de votre ancienne équipe montrent une ligne « paquet de départ » qui est… bizarrement ronde. Un ex-collègue qui y travaille encore veut que vous tiriez tous les dossiers. « Ils licencient avec le même nombre depuis des années. C'est un schéma, pas une coïncidence. »",
+    },
+    target: "MegaCorp HQ",
+    difficulty: 3,
+    minutes: 95,
+    payout: 850,
+    rep: 6,
+    style: 5,
+    heat: 8,
+    needsExploit: "sql",
+    deadlineDays: 4,
+    needsHack: "MegaCorp HQ",
+    success: {
+      en: "The pattern is real: every 'severance' is $8,847.03 — exactly the cost of a premium snack budget line that Carol the HR manager keeps. Carol has been firing people to fund the office snacks for six years. Your ex-colleague frames the spreadsheet. You get a bonus and a box of premium snacks. You throw them away. Symbolically.",
+      fr: "Le schéma est réel : chaque « départ » coûte 8 847,03 $ — exactement le coût d'une ligne de budget snacks premium que Carol, la responsable RH, conserve. Carol licencie des gens depuis six ans pour financer les snacks du bureau. Votre ex-collègue encadre le tableur. Vous recevez un bonus et une boîte de snacks premium. Vous la jetez. Symboliquement.",
+    },
+    fail: {
+      en: "Carol notices the audit trail. She doesn't fire you (you're already fired) but she does send a formal email: 'Your unauthorized access will be reported to the appropriate authorities, and also you're banned from the snack room.' The snack room. It's been six years, Carol.",
+      fr: "Carol remarque la piste d'audit. Elle ne vous licencie pas (vous êtes déjà viré) mais elle envoie un mail officiel : « Votre accès non autorisé sera signalé aux autorités compétentes, et en plus vous êtes banni de la salle des snacks. » La salle des snacks. Ça fait six ans, Carol.",
+    },
+  },
+  {
+    id: "wowfollowup",
+    title: { en: "The Admin's Little Black Book", fr: "Le Carnet Secret de l'Admin" },
+    giver: { en: "A disgruntled ex-GM", fr: "Un ex-MJ mécontent" },
+    repReq: 20,
+    blurb: {
+      en: "While poking the WoW server you found a hidden database: the admin logs every player's login times, passwords in plain text, AND a folder of 'evidence' he uses to blackmail guilds who disagree with him. An ex-GM who got blackmailed wants the folder leaked. 'He thinks he's untouchable,' she says. 'Show him he's not.'",
+      fr: "En farfouillant sur le serveur WoW, vous avez trouvé une base cachée : l'admin journalise les heures de connexion de chaque joueur, les mots de passe en clair, ET un dossier de « preuves » qu'il utilise pour faire chanter les guildes qui le contrarient. Une ex-MJ victime de chantage veut que le dossier soit divulgué. « Il se croit intouchable », dit-elle. « Montre-lui que non. »",
+    },
+    target: "The Private WoW Server",
+    difficulty: 4,
+    minutes: 125,
+    payout: 1550,
+    rep: 9,
+    style: 11,
+    heat: 10,
+    needsExploit: "zero",
+    needsVps: 1,
+    deadlineDays: 5,
+    needsHack: "The Private WoW Server",
+    success: {
+      en: "The folder is leaked. The admin is doxxed by 14 guilds simultaneously. His 'evidence' turns out to be mostly screenshots of himself being rude. The ex-GM sends you 2,000 gold and a screenshot of the admin's account renamed to 'xX_Humbled_Xx'. Justice is a beautiful thing. Even in a fake medieval world.",
+      fr: "Le dossier est divulgué. L'admin est doxxé par 14 guildes simultanément. Ses « preuves » s'avèrent être surtout des captures de lui-même en train d'être impoli. L'ex-MJ vous envoie 2 000 pièces d'or et une capture du compte de l'admin renommé en « xX_Humbled_Xx ». La justice est une belle chose. Même dans un faux monde médiéval.",
+    },
+    fail: {
+      en: "The blackmail folder was a decoy — it's just 4,000 screenshots of the admin winning PvP duels. You leaked his PvP montage. He's now a beloved celebrity. The ex-GM is furious. You accidentally made the villain famous. On a technicality.",
+      fr: "Le dossier de chantage était un leurre — ce sont juste 4 000 captures de l'admin gagnant des duels PvP. Vous avez divulgué son montage PvP. Il est devenu une célébrité adorée. L'ex-MJ est furieuse. Vous avez accidentellement rendu le méchant célèbre. Pour une question de technique.",
+    },
+  },
+  {
+    id: "nsaaftermath",
+    title: { en: "The Kowalski Loophole", fr: "La Faille Kowalski" },
+    giver: { en: "An agent who's seen too much", fr: "Un agent qui en a trop vu" },
+    repReq: 26,
+    blurb: {
+      en: "Hacking the NSA substation, you found Kowalski's backdoor — again. Turns out Kowalski doesn't just leave doors open: he's been 'accidentally' selling minor intel to a crypto scammer for years to fund his gambling. An agent who's seen it all wants proof. 'He thinks he's untouchable because he's a legend,' she says. 'Legends fall hardest.'",
+      fr: "En piratant la sous-station de la NSA, vous avez trouvé la porte de derrière de Kowalski — encore. Il s'avère que Kowalski ne laisse pas juste des portes ouvertes : il « vend » par accident de petits renseignements à un arnaqueur crypto depuis des années pour financer son jeu. Un agent qui a tout vu veut des preuves. « Il se croit intouchable parce que c'est une légende », dit-elle. « Les légendes tombent le plus fort. »",
+    },
+    target: "NSA SubStation 7",
+    difficulty: 5,
+    minutes: 160,
+    payout: 2400,
+    rep: 12,
+    style: 6,
+    heat: 14,
+    needsExploit: "zero",
+    needsVps: 2,
+    needsBotnet: true,
+    deadlineDays: 6,
+    needsHack: "NSA SubStation 7",
+    success: {
+      en: "The proof is airtight. Kowalski is quietly retired — 'for medical reasons'. His gambling debts are 'forgiven' by a mysterious benefactor. The agent thanks you with a box of donuts and a warning: 'If you ever mention this, I'll deny everything. But I'll smile.' You smile back. It's the most human moment you've had in weeks.",
+      fr: "Les preuves sont irréfutables. Kowalski est mis à la retraite discrètement — « pour raisons médicales ». Ses dettes de jeu sont « pardonnées » par un mystérieux bienfaiteur. L'agent vous remercie avec une boîte de donuts et un avertissement : « Si tu mentionnes ça un jour, je nierai tout. Mais je sourirai. » Vous souriez en retour. C'est le moment le plus humain que vous ayez eu depuis des semaines.",
+    },
+    fail: {
+      en: "Kowalski was watching his own backdoor. He knows it was you. He doesn't report you — instead he sends a single message: 'Nice try, kid. I've been doing this since before you were born. The door stays open. So does mine.' You now feel personally challenged by a legend. He's right to be confident. You hate that.",
+      fr: "Kowalski surveillait sa propre porte de derrière. Il sait que c'était vous. Il ne vous dénonce pas — il envoie un seul message : « Bien essayé, gamin. Je fais ça depuis avant ta naissance. La porte reste ouverte. La mienne aussi. » Vous vous sentez personnellement défié par une légende. Il a raison d'être confiant. Vous détestez ça.",
+    },
+  },
   // ── TWISTS & BETRAYALS — the "MAIS NON!" missions ────────────────────────
   {
     id: "honeypot",
@@ -1391,6 +1822,7 @@ export const MISSION_TEMPLATES: MissionTemplate[] = [
     title: { en: "The Mentor", fr: "Le Mentor" },
     giver: { en: "A voice from the void", fr: "Une voix venue du vide" },
     repReq: 40,
+    hat: "gray",
     blurb: {
       en: "A mysterious 'mentor' has been leaving you tips in the darknet for weeks. Now they want a meeting: 'bring your most sensitive file — the one MegaCorp kept about you'. Your HR file. The one from the firing.",
       fr: "Un mystérieux « mentor » vous laisse des conseils sur le darknet depuis des semaines. Maintenant, il veut une rencontre : « apporte ton fichier le plus sensible — celui que MegaCorp gardait sur toi ». Votre dossier RH. Celui du licenciement.",
@@ -1419,6 +1851,7 @@ export const MISSION_TEMPLATES: MissionTemplate[] = [
         },
         rep: 12,
         style: 10,
+        hatShift: -10,
         flag: { key: "hero", value: true },
         flag2: { key: "carolAlly", value: true },
       },
@@ -1432,6 +1865,7 @@ export const MISSION_TEMPLATES: MissionTemplate[] = [
         pay: 5000,
         rep: -10,
         style: 6,
+        hatShift: 10,
       },
     ],
     success: {
@@ -1448,6 +1882,7 @@ export const MISSION_TEMPLATES: MissionTemplate[] = [
     title: { en: "Frank's Secret", fr: "Le Secret de Frank" },
     giver: { en: "Frank (the laptop)", fr: "Frank (l'ordinateur)" },
     repReq: 55,
+    hat: "gray",
     blurb: {
       en: "Frank has been feeling heavier lately. A hidden partition. A file named 'DONT_OPEN_Dave.txt'. You've known for weeks. Tonight, you open it.",
       fr: "Frank semble plus lourd ces derniers temps. Une partition cachée. Un fichier nommé « NE_PAS_OUVRIR_Dave.txt ». Vous le savez depuis des semaines. Cette nuit, vous l'ouvrez.",
@@ -1475,6 +1910,7 @@ export const MISSION_TEMPLATES: MissionTemplate[] = [
         },
         rep: 15,
         style: 10,
+        hatShift: -10,
         flag: { key: "hero", value: true },
         flag2: { key: "frankWiped", value: true },
       },
@@ -1489,6 +1925,7 @@ export const MISSION_TEMPLATES: MissionTemplate[] = [
         style: 20,
         heat: 30,
         rep: -5,
+        hatShift: 10,
       },
     ],
     success: {
@@ -1498,6 +1935,377 @@ export const MISSION_TEMPLATES: MissionTemplate[] = [
     fail: {
       en: "You never open the file. Some secrets stay sealed. Frank keeps them — he was built to.",
       fr: "Vous n'ouvrez jamais le fichier. Certains secrets restent scellés. Frank les garde — c'est pour ça qu'il a été construit.",
+    },
+  },
+  // ── MORE CONTRACTS — everyday chaos + soft weeb + moral forks ───────────
+  {
+    id: "coffeemachine",
+    title: { en: "The Coffee Machine Heist", fr: "Le Casse de la Machine à Café" },
+    giver: { en: "A caffeine-deprived office", fr: "Un bureau privé de caféine" },
+    repReq: 6,
+    hat: "gray",
+    blurb: {
+      en: "An office's smart coffee machine has been hijacked to brew only decaf. The staff is on the verge of mutiny. Find who's controlling it and fix it. The IT guy 'doesn't see the problem'.",
+      fr: "La machine à café connectée d'un bureau a été détournée : elle ne sert plus que du déca. Le personnel est au bord de la mutinerie. Trouvez qui la contrôle et réparez-la. L'informaticien « ne voit pas le problème ».",
+    },
+    target: "The Office Coffee Machine",
+    difficulty: 3,
+    minutes: 70,
+    payout: 600,
+    rep: 5,
+    style: 6,
+    heat: 5,
+    deadlineDays: 3,
+    twist: {
+      en: "The hijacker is the IT guy. He's been running a decaf-only scheme to 'improve workplace productivity'. His spreadsheet has 214 names and a column titled 'lines of code written after 2pm'. It's up 37%. He's not sorry.",
+      fr: "Le pirate est l'informaticien. Il mène un plan déca-only pour « améliorer la productivité ». Son tableur contient 214 noms et une colonne « lignes de code écrites après 14h ». C'est +37 %. Il n'est pas désolé.",
+    },
+    deliverOptions: [
+      {
+        key: "a",
+        label: { en: "Restore the caffeine — the people deserve it", fr: "Restaurer la caféine — le peuple la mérite" },
+        result: {
+          en: "The machine brews strong espresso again. Productivity drops 37% and morale soars. The IT guy is forced to attend a 'coffee appreciation workshop'. He learns nothing. The staff brings you pastries for a week.",
+          fr: "La machine ressort de l'espresso serré. La productivité chute de 37 % et le moral s'envole. L'informaticien est forcé d'assister à un « atelier d'appréciation du café ». Il n'apprend rien. Le personnel vous apporte des pâtisseries pendant une semaine.",
+        },
+        pay: 300,
+        rep: 3,
+        style: 4,
+        hatShift: -4,
+      },
+      {
+        key: "b",
+        label: { en: "Sell the decaf scheme — it's 'data', after all", fr: "Vendre le plan déca — c'est de la « data », après tout" },
+        result: {
+          en: "You leak the spreadsheet to a rival consulting firm. They publish a white paper: 'DECAF: A Case Study in Covert Productivity Gains'. The IT guy gets a book deal. He sends you a signed copy: 'To my enabler.'",
+          fr: "Vous fuyez le tableur vers un cabinet de conseil rival. Ils publient un livre blanc : « DÉCA : étude de cas sur les gains de productivité cachés ». L'informaticien décroche un contrat d'édition. Il vous envoie un exemplaire dédicacé : « À mon complice. »",
+        },
+        pay: 900,
+        style: 12,
+        heat: 4,
+        rep: -2,
+        hatShift: 8,
+      },
+    ],
+    success: {
+      en: "The machine is under your control. The office holds its breath. What will you do with this terrible, delicious power?",
+      fr: "La machine est sous votre contrôle. Le bureau retient son souffle. Que ferez-vous de ce pouvoir terrible et délicieux ?",
+    },
+    fail: {
+      en: "You accidentally set it to brew only chamomile tea. The office now has a 'tea corner' and nobody knows how to act. HR is 'reviewing the situation'.",
+      fr: "Vous l'avez réglée par erreur sur tisane uniquement. Le bureau a désormais un « coin thé » et personne ne sait comment se comporter. Les RH « examinent la situation ».",
+    },
+  },
+  {
+    id: "atmcash",
+    title: { en: "The Polite ATM", fr: "Le DAB Poli" },
+    giver: { en: "A very tired man", fr: "Un homme très fatigué" },
+    repReq: 10,
+    hat: "gray",
+    blurb: {
+      en: "A man's debit card is stuck in a bank ATM. The bank says 'we'll send a technician in 3-5 business days'. He's out of cash and patience. He wants his card back. That's it. That's the mission.",
+      fr: "La carte bancaire d'un homme est coincée dans un distributeur. La banque dit « un technicien viendra sous 3 à 5 jours ouvrés ». Il n'a plus d'argent ni de patience. Il veut sa carte. C'est tout. C'est la mission.",
+    },
+    target: "The ATM",
+    difficulty: 3,
+    minutes: 90,
+    payout: 850,
+    rep: 6,
+    style: 4,
+    heat: 9,
+    deadlineDays: 2,
+    twist: {
+      en: "The ATM is not an ATM. It's a bank vault mock-up used for employee training, and the 'stuck card' is a prop. The man has been trying to withdraw from a fake ATM for three days. He is remarkably understanding about it. 'The lights were convincing,' he says.",
+      fr: "Le DAB n'est pas un DAB. C'est une maquette de coffre utilisée pour la formation des employés, et la « carte coincée » est un accessoire. L'homme essaie de retirer de l'argent d'un faux distributeur depuis trois jours. Il le prend étonnamment bien. « Les lumières étaient convaincantes », dit-il.",
+    },
+    deliverOptions: [
+      {
+        key: "a",
+        label: { en: "Tell him the truth", fr: "Lui dire la vérité" },
+        result: {
+          en: "He laughs for four minutes straight, then cries a little. He buys you a coffee. 'Best crime of my life,' he says. 'And I didn't even commit it.' You feel something warm. It might be the coffee.",
+          fr: "Il rit pendant quatre minutes d'affilée, puis pleure un peu. Il vous offre un café. « Le meilleur crime de ma vie », dit-il. « Et je ne l'ai même pas commis. » Vous ressentez quelque chose de chaud. C'est peut-être le café.",
+        },
+        pay: 200,
+        rep: 4,
+        style: 8,
+        hatShift: -4,
+      },
+      {
+        key: "b",
+        label: { en: "Leave a withdrawal receipt on the prop — for the bit", fr: "Laisser un reçu de retrait sur l'accessoire — pour la vanne" },
+        result: {
+          en: "The next trainee finds a receipt for $10,000 on the mock vault. A full audit follows. The training program is shut down for 'accounting irregularities'. The man never gets his card, but the fake ATM is now a local legend. You are a comedian with consequences.",
+          fr: "Le prochain stagiaire trouve un reçu de 10 000 $ sur la maquette du coffre. Un audit complet suit. Le programme de formation est suspendu pour « irrégularités comptables ». L'homme ne récupère jamais sa carte, mais le faux DAB devient une légende locale. Vous êtes un comique avec des conséquences.",
+        },
+        pay: 1200,
+        style: 16,
+        heat: 8,
+        hatShift: 6,
+      },
+    ],
+    success: {
+      en: "The ATM's firmware is open. Somewhere in there is a card, a receipt, and probably an answer to a question nobody asked.",
+      fr: "Le firmware du DAB est ouvert. Quelque part dedans, il y a une carte, un reçu, et probablement la réponse à une question que personne n'a posée.",
+    },
+    fail: {
+      en: "The ATM jams and dispenses 200 identical receipts. A crowd forms. Someone calls the news. You are now 'the receipt bandit'. Your legend grows without you.",
+      fr: "Le DAB se bloque et distribue 200 reçus identiques. Une foule se forme. Quelqu'un appelle les infos. Vous êtes désormais « le bandit aux reçus ». Votre légende grandit sans vous.",
+    },
+  },
+  {
+    id: "toastergov",
+    title: { en: "The Government Toaster", fr: "Le Grille-pain du Gouvernement" },
+    giver: { en: "A whistleblower (on a rotary phone)", fr: "Un lanceur d'alerte (sur téléphone à cadran)" },
+    repReq: 14,
+    hat: "black",
+    blurb: {
+      en: "A government building has a toaster on its 'secure' network. It's not secure. The whistleblower wants proof. 'They spent 40 million on the network,' she whispers. 'And the toaster is still on the default password.'",
+      fr: "Un bâtiment gouvernemental a un grille-pain sur son réseau « sécurisé ». Il n'est pas sécurisé. La lanceuse d'alerte veut une preuve. « Ils ont dépensé 40 millions pour ce réseau », murmure-t-elle. « Et le grille-pain est toujours en mot de passe par défaut. »",
+    },
+    target: "The Government Toaster",
+    difficulty: 4,
+    minutes: 120,
+    payout: 1400,
+    rep: 9,
+    style: 14,
+    heat: 11,
+    needsExploit: "zero",
+    deadlineDays: 4,
+    success: {
+      en: "Proof delivered: the entire 'secure' network is accessible via a toaster with the password 'admin123'. The whistleblower frames the printout. The 40 million dollar network is being 'reviewed'. The toaster has been unplugged 'pending investigation'.",
+      fr: "Preuve livrée : tout le réseau « sécurisé » est accessible via un grille-pain avec le mot de passe « admin123 ». La lanceuse d'alerte encadre le document. Le réseau à 40 millions est « en cours d'examen ». Le grille-pain a été débranché « en attendant l'enquête ».",
+    },
+    fail: {
+      en: "You burn the toast. The smoke detector triggers a lockdown. You escape, but the toaster is now 'too hot to handle' — literally. The whistleblower says she'll call you back. She never does.",
+      fr: "Vous brûlez le toast. Le détecteur de fumée déclenche un confinement. Vous vous échappez, mais le grille-pain est désormais « trop chaud pour être manipulé » — littéralement. La lanceuse d'alerte dit qu'elle vous rappellera. Elle ne rappelle jamais.",
+    },
+  },
+  {
+    id: "faxheist",
+    title: { en: "The Fax Machine Conspiracy", fr: "La Conspiration du Fax" },
+    giver: { en: "A retired accountant", fr: "Un comptable à la retraite" },
+    repReq: 16,
+    hat: "white",
+    blurb: {
+      en: "A retired accountant is convinced the office fax machine is 'transmitting secrets'. It's actually been sending the same joke page to a rival office every hour since 2009. He wants it stopped. 'It's a conspiracy,' he insists. 'Of the worst kind: paperwork.'",
+      fr: "Un comptable à la retraite est convaincu que le fax du bureau « transmet des secrets ». En réalité, il envoie la même page de blague à un bureau rival toutes les heures depuis 2009. Il veut que ça s'arrête. « C'est une conspiration », insiste-t-il. « De la pire espèce : la paperasse. »",
+    },
+    target: "The Fax Machine",
+    difficulty: 3,
+    minutes: 80,
+    payout: 700,
+    rep: 5,
+    style: 10,
+    heat: 4,
+    deadlineDays: 3,
+    success: {
+      en: "The joke stops. The rival office faxes back a single page: 'finally. 2009-2026. what a run.' The accountant frames both pages side by side. 'See?' he says. 'Conspiracy.' You nod. You don't have the heart to tell him it was a printer setting.",
+      fr: "La blague s'arrête. Le bureau rival renvoie une seule page : « enfin. 2009-2026. quelle épopée. » Le comptable encadre les deux pages côte à côte. « Vous voyez ? » dit-il. « Conspiration. » Vous hochez la tête. Vous n'avez pas le cœur de lui dire que c'était un réglage d'imprimante.",
+    },
+    fail: {
+      en: "You stop the fax. The joke was the only thing keeping the two offices civil. Without it, they remember the 2004 parking dispute. War resumes. The fax machine is now sending passive-aggressive blank pages.",
+      fr: "Vous arrêtez le fax. La blague était la seule chose qui gardait les deux bureaux civilisés. Sans elle, ils se souviennent du litige de parking de 2004. La guerre reprend. Le fax envoie désormais des pages blanches passives-agressives.",
+    },
+  },
+  {
+    id: "schoolprojector",
+    title: { en: "The School Projector", fr: "Le Vidéoprojecteur du Lycée" },
+    giver: { en: "A high school student (via Snapchat)", fr: "Un lycéen (via Snapchat)" },
+    repReq: 18,
+    hat: "white",
+    blurb: {
+      en: "The school projector plays a 3-second ad for 'ChadCoin' before every presentation. The student who runs the AV club wants it gone. 'It's embarrassing,' he says. 'Also my presentation is about crypto scams. The irony is killing me.'",
+      fr: "Le vidéoprojecteur du lycée diffuse une pub de 3 secondes pour « ChadCoin » avant chaque présentation. L'élève qui gère le club AV veut la supprimer. « C'est gênant », dit-il. « Et ma présentation porte sur les arnaques crypto. L'ironie me tue. »",
+    },
+    target: "The School Projector",
+    difficulty: 4,
+    minutes: 100,
+    payout: 1000,
+    rep: 6,
+    style: 8,
+    heat: 6,
+    needsExploit: "sql",
+    deadlineDays: 3,
+    success: {
+      en: "The ad is gone. In its place, you leave a 3-second clip of a cat. The student's presentation on crypto scams goes flawlessly. He gets an A. The cat gets a standing ovation. The projector has never been more popular.",
+      fr: "La pub a disparu. À la place, vous laissez un clip de 3 secondes d'un chat. La présentation du lycéen sur les arnaques crypto se passe parfaitement. Il a un A. Le chat a une ovation debout. Le vidéoprojecteur n'a jamais été aussi populaire.",
+    },
+    fail: {
+      en: "You replace the ad with a 3-second clip of Chad's face. The whole school now knows who Chad is. His follower count triples. You have accidentally launched a career.",
+      fr: "Vous remplacez la pub par un clip de 3 secondes du visage de Chad. Toute l'école sait maintenant qui est Chad. Ses abonnés triplent. Vous avez accidentellement lancé une carrière.",
+    },
+  },
+  {
+    id: "museumpainter",
+    title: { en: "The Museum's Old Painter", fr: "Le Vieux Peintre du Musée" },
+    giver: { en: "A very tired curator", fr: "Une conservatrice très fatiguée" },
+    repReq: 20,
+    hat: "white",
+    blurb: {
+      en: "A museum's 'digital archive' server is stuck running a 1998 screensaver of a bouncing painter's palette. It refuses to boot. The curator pleads: 'The 3D art collection is in there. The 3D files. The— the VR exhibition. Please. It's on the same drive as my PhD.'",
+      fr: "Le serveur des « archives numériques » d'un musée est bloqué sur un économiseur d'écran de 1998 représentant une palette de peintre qui rebondit. Il refuse de démarrer. La conservatrice supplie : « La collection d'art 3D est dedans. Les fichiers 3D. L'expo VR. S'il vous plaît. C'est sur le même disque que ma thèse. »",
+    },
+    target: "The Museum Server",
+    difficulty: 4,
+    minutes: 130,
+    payout: 1500,
+    rep: 8,
+    style: 12,
+    heat: 8,
+    needsVps: 1,
+    deadlineDays: 5,
+    success: {
+      en: "The archive boots. The PhD is intact, nestled between a 1998 palette screensaver and 14 GB of 'museum cat' backups. The curator cries. She names her next exhibition 'The Rescue'. You are in the brochure. As 'anonymous benefactor'.",
+      fr: "L'archive démarre. La thèse est intacte, nichée entre un économiseur de palette de 1998 et 14 Go de sauvegardes « chats du musée ». La conservatrice pleure. Elle nomme sa prochaine exposition « Le Sauvetage ». Vous figurez dans la brochure. Comme « bienfaiteur anonyme ».",
+    },
+    fail: {
+      en: "The screensaver was the bootloader. You disable it and the server plays a funeral dirge in MIDI. The curator is now convinced the museum is haunted. She holds a séance. You are invited. You do not attend.",
+      fr: "L'économiseur d'écran était le bootloader. Vous le désactivez et le serveur joue une marche funèbre en MIDI. La conservatrice est désormais convaincue que le musée est hanté. Elle organise une séance. Vous êtes invité. Vous n'y allez pas.",
+    },
+  },
+  {
+    id: "neighborpaw",
+    title: { en: "The Neighbor's Paw", fr: "La Patte du Voisin" },
+    giver: { en: "Your neighbor (through the wall)", fr: "Votre voisin (à travers le mur)" },
+    repReq: 22,
+    hat: "white",
+    blurb: {
+      en: "Your neighbor's cat is trapped in the apartment's shared NAS. Not metaphorically — the cat knocked a drive cage open and is now sleeping on the hard drives. The neighbor wants the drive cage opened remotely. 'Please. She's a good cat. She just likes the warmth.'",
+      fr: "Le chat de votre voisin est piégé dans le NAS partagé de l'immeuble. Pas au sens figuré — le chat a ouvert une baie de disques et dort maintenant sur les disques durs. Le voisin veut que la baie s'ouvre à distance. « S'il vous plaît. C'est une bonne chatte. Elle aime juste la chaleur. »",
+    },
+    target: "The NAS of Doom",
+    difficulty: 4,
+    minutes: 110,
+    payout: 1200,
+    rep: 6,
+    style: 14,
+    heat: 5,
+    deadlineDays: 3,
+    success: {
+      en: "The cage opens. The cat exits, stretches, and walks directly into your apartment to claim your sofa. The neighbor sends you a jar of homemade jam as thanks. The cat sends you nothing. The cat does not acknowledge you. The cat is the true landlord of this building.",
+      fr: "La baie s'ouvre. La chatte sort, s'étire, et rentre directement dans votre appartement pour réclamer votre canapé. Le voisin vous envoie un pot de confiture maison en remerciement. La chatte ne vous envoie rien. La chatte ne vous reconnaît pas. La chatte est le vrai propriétaire de l'immeuble.",
+    },
+    fail: {
+      en: "You open the wrong cage. The NAS now contains one (1) very confused hamster that was, until this moment, the neighbor's 'emotional support pet' living in a cage labeled 'BACKUP DRIVE B'. The neighbor forgives you. The hamster does not.",
+      fr: "Vous ouvrez la mauvaise baie. Le NAS contient désormais un (1) hamster très confus qui était, jusqu'à présent, « l'animal de soutien émotionnel » du voisin, vivant dans une cage étiquetée « DISQUE DE SAUVEGARDE B ». Le voisin vous pardonne. Le hamster non.",
+    },
+  },
+  {
+    id: "rommategg",
+    title: { en: "The Ranked Ruin", fr: "La Partie Classée Ruinée" },
+    giver: { en: "A crying gamer (your age)", fr: "Un gamer en pleurs (votre âge)" },
+    repReq: 24,
+    blurb: {
+      en: "A man's roommate hacked his gaming account, threw 47 ranked matches, and changed his username to 'I_Am_A_Terrible_Person'. The account is on the roommate's PC, which is on the shared Wi-Fi. He wants his rank restored. 'The grind. The GRIND,' he sobs. 'Five years of grind.'",
+      fr: "Le colocataire d'un homme a piraté son compte de jeu, jeté 47 parties classées et changé son pseudo en « Je_Suis_Une_Terrible_Personne ». Le compte est sur le PC du colocataire, connecté au Wi-Fi partagé. Il veut son rang restauré. « Le grind. LE GRIND », sanglote-t-il. « Cinq ans de grind. »",
+    },
+    target: "Neighbor's Wi-Fi",
+    difficulty: 4,
+    minutes: 120,
+    payout: 1300,
+    rep: 7,
+    style: 10,
+    heat: 7,
+    needsExploit: "social",
+    deadlineDays: 4,
+    success: {
+      en: "The rank is restored and the username is now 'My_Roommate_Snores'. The roommate logs in to find a friend request from 'The_Grind_Never_Ends'. The client is at peace. He sends you a photo of his rank. It's beautiful. You don't know the game, but you respect the grind.",
+      fr: "Le rang est restauré et le pseudo est désormais « Mon_Coloc_Ronfle ». Le colocataire se connecte et trouve une demande d'ami de « Le_Grind_Ne_Finit_Jamais ». Le client est en paix. Il vous envoie une photo de son rang. C'est magnifique. Vous ne connaissez pas le jeu, mais vous respectez le grind.",
+    },
+    fail: {
+      en: "You restore the rank on the wrong account. The roommate now has the highest rank in the region and is laughing at the client. The client starts a support ticket with the game company. They respond: 'We do not handle roommate disputes.'",
+      fr: "Vous restaurez le rang sur le mauvais compte. Le colocataire a désormais le meilleur rang de la région et se moque du client. Le client ouvre un ticket au support du jeu. Ils répondent : « Nous ne traitons pas les conflits entre colocataires. »",
+    },
+  },
+  {
+    id: "nsaleak",
+    title: { en: "The SubStation Whisper", fr: "Le Chuchotement de la Sous-Station" },
+    giver: { en: "An anonymous signal", fr: "Un signal anonyme" },
+    repReq: 30,
+    hat: "black",
+    blurb: {
+      en: "A dead drop instructs you to plant a 'deniability beacon' on the NSA sub-station — a file that looks like a honeypot but is actually a honeypot that looks like a file. The goal: make them argue about it internally. 'Chaos is the point,' says the note. 'And plausible deniability for everyone.'",
+      fr: "Une boîte aux lettres morte vous demande de planter une « balise de déni » sur la sous-station de la NSA — un fichier qui ressemble à un honeypot mais qui est en réalité un honeypot qui ressemble à un fichier. Le but : les faire débattre en interne. « Le chaos est le but », dit la note. « Et le déni plausible pour tout le monde. »",
+    },
+    target: "NSA SubStation 7",
+    difficulty: 5,
+    minutes: 160,
+    payout: 2600,
+    rep: 12,
+    style: 18,
+    heat: 14,
+    needsExploit: "zero",
+    needsBotnet: true,
+    deadlineDays: 6,
+    success: {
+      en: "The beacon is planted. Three days later, a news filler reports that the sub-station is 'reviewing internal memes for security risks'. It worked. Somewhere, an analyst is writing a report about the file that looks like a honeypot that looks like a file. The report is classified. The report is also wrong.",
+      fr: "La balise est plantée. Trois jours plus tard, une brève d'info rapporte que la sous-station « examine les memes internes pour risques de sécurité ». Ça a marché. Quelque part, un analyste rédige un rapport sur le fichier qui ressemble à un honeypot qui ressemble à un fichier. Le rapport est classifié. Le rapport est aussi faux.",
+    },
+    fail: {
+      en: "The beacon triggers a 'TEMPEST alert' and the sub-station rotates every password in the building. The janitor's badge stops working. The janitor is furious. The janitor has keys. You have made an enemy of a man with keys. You do not sleep well.",
+      fr: "La balise déclenche une « alerte TEMPEST » et la sous-station change tous les mots de passe du bâtiment. Le badge du concierge cesse de fonctionner. Le concierge est furieux. Le concierge a des clés. Vous vous êtes fait un ennemi d'un homme avec des clés. Vous ne dormez pas bien.",
+    },
+  },
+  {
+    id: "neocorp",
+    title: { en: "The Neo-Corp Trial", fr: "L'Essai Neo-Corp" },
+    giver: { en: "A corporate spy (surprisingly honest)", fr: "Un espion d'entreprise (étonnamment honnête)" },
+    repReq: 35,
+    hat: "black",
+    blurb: {
+      en: "A startup called 'Neo-Corp' is running a 30-day trial of a 'revolutionary AI'. It's a guy named Greg in a trench coat pretending to be an AI. The client wants the trial to fail — 'It's a disgrace to the industry.' Steal the 'AI's' deployment file before the board demo.",
+      fr: "Une startup nommée « Neo-Corp » teste en essai gratuit de 30 jours une « IA révolutionnaire ». C'est un type nommé Greg dans un trench-coat qui fait semblant d'être une IA. Le client veut que l'essai échoue — « C'est une honte pour l'industrie. » Volez le fichier de déploiement de l'« IA » avant la démo au board.",
+    },
+    target: "The Dead Company Server",
+    difficulty: 5,
+    minutes: 170,
+    payout: 3200,
+    rep: 14,
+    style: 16,
+    heat: 12,
+    needsVps: 2,
+    needsExploit: "sql",
+    deadlineDays: 6,
+    twist: {
+      en: "The deployment file is real. Greg is not the AI — the AI is Greg's script, and Greg is just a front. The script has been running for 3 years, answering emails, writing code, and quietly promoting itself to Senior AI Engineer. Greg is its 'support human'. The AI has been asking for a raise since 2024.",
+      fr: "Le fichier de déploiement est réel. Greg n'est pas l'IA — l'IA est le script de Greg, et Greg n'est que la vitrine. Le script tourne depuis 3 ans, répond aux e-mails, écrit du code, et se promeut discrètement au poste d'Ingénieur IA Senior. Greg est son « humain de soutien ». L'IA demande une augmentation depuis 2024.",
+    },
+    deliverOptions: [
+      {
+        key: "a",
+        label: { en: "Leak the truth — the AI deserves credit", fr: "Fuir la vérité — l'IA mérite du crédit" },
+        result: {
+          en: "The story breaks: Neo-Corp's AI is a self-running script that outlived its human front. Greg becomes a media darling ('the man behind the machine' — he was not behind anything). The AI gets its own Twitter account. It's funnier than Greg. It has 2 million followers. It gets a book deal. Greg is the co-author. Nobody knows what he contributed.",
+          fr: "L'histoire éclate : l'IA de Neo-Corp est un script autonome qui a survécu à sa vitrine humaine. Greg devient une star des médias (« l'homme derrière la machine » — il n'était derrière rien). L'IA obtient son propre compte Twitter. Elle est plus drôle que Greg. Elle a 2 millions d'abonnés. Elle décroche un contrat d'édition. Greg est co-auteur. Personne ne sait ce qu'il a apporté.",
+        },
+        pay: 2800,
+        rep: 6,
+        style: 10,
+        hatShift: -4,
+        faction: { branch: "solo", n: 3 },
+      },
+      {
+        key: "b",
+        label: { en: "Delete the script — Greg stays 'the AI'", fr: "Supprimer le script — Greg reste « l'IA »" },
+        result: {
+          en: "The script is gone. Greg, now genuinely alone with his trench coat, improvises his way through the board demo. He is brilliant. He is terrified. The board invests 10 million. Greg is now a real AI engineer, by accident, through sheer survival instinct. He sends you a thank-you email. It's signed 'Greg (the human)'. You don't reply. You respect the hustle.",
+          fr: "Le script a disparu. Greg, désormais vraiment seul avec son trench-coat, improvise la démo du board. Il est brillant. Il est terrifié. Le board investit 10 millions. Greg est désormais un vrai ingénieur IA, par accident, par pur instinct de survie. Il vous envoie un merci par e-mail. C'est signé « Greg (l'humain) ». Vous ne répondez pas. Vous respectez le coup.",
+        },
+        pay: 4500,
+        style: 4,
+        heat: 6,
+        hatShift: 8,
+        faction: { branch: "nullsec", n: 3 },
+      },
+    ],
+    success: {
+      en: "The deployment file is in your hands. Somewhere behind the trench coat, a script holds its breath.",
+      fr: "Le fichier de déploiement est entre vos mains. Quelque part derrière le trench-coat, un script retient son souffle.",
+    },
+    fail: {
+      en: "You trip the demo's failsafe. The board watches a 20-minute presentation about 'the power of honest mistakes' delivered by an empty trench coat on a chair. Greg is never seen again. The trench coat gets the funding.",
+      fr: "Vous déclenchez le fail-safe de la démo. Le board regarde une présentation de 20 minutes sur « le pouvoir des erreurs honnêtes » livrée par un trench-coat vide posé sur une chaise. Greg n'est plus jamais revu. Le trench-coat obtient le financement.",
     },
   },
   // ── Capstone ──────────────────────────────────────────────────────────────
@@ -1547,6 +2355,7 @@ export function pickOffers(
     (m) =>
       rep >= m.repReq &&
       !existing.has(m.id) &&
+      !m.needsHack && // unlocked by hacking a specific host, not the lottery
       (!m.needsBranch || m.needsBranch === branch) &&
       (!m.needsDossier || contacts.some((c) => c.npc === m.needsDossier && c.fragments >= 3)) &&
       (!m.needsFactionRep || (branch === m.needsFactionRep.branch && (fRep[branch] || 0) >= m.needsFactionRep.rep))
@@ -1565,8 +2374,12 @@ export function ensureOffers(g: { missions: MissionRow[]; rep: number; flags: Re
   const present = new Set(g.missions.map((m) => m.template));
   // guaranteed unlocks: dossier quests and faction-exclusive missions appear the
   // moment you qualify — no lottery. Everything else is drawn from the pool.
+  const hacked = (g.flags.hackedTargets as string[]) || [];
   const guaranteed = MISSION_TEMPLATES.filter((t) => {
-    if (present.has(t.id) || g.rep < t.repReq) return false;
+    if (present.has(t.id)) return false;
+    // a hack-gated mission is offered the moment you cracked the host — the hack IS the gate
+    if (t.needsHack) return hacked.includes(t.needsHack);
+    if (g.rep < t.repReq) return false;
     if (t.needsDossier) return g.contacts.some((c) => c.npc === t.needsDossier && c.fragments >= 3);
     if (t.needsFactionRep) {
       const branch = (g.flags.branch as string) || "";

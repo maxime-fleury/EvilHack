@@ -3,7 +3,7 @@ import * as term from "./terminal.js";
 import { renderStats, renderMissions, renderInv, renderShop, renderPeople, renderNews, renderHelp, renderSettings } from "./ui.js";
 import { initChat, addMsg, setupChat, setChatTabState } from "./chat.js";
 import { setupShell, setLocked, playBoot, showLogin, setLoginTexts, setShellLang } from "./os.js";
-import { setSound } from "./sound.js";
+import { setSound, setVolume, sBoot, sPowerOff, sShutdown, sScreensaver, sAchievement, sLevelUp, sAlarm, sWarning, sCoin, sHackStart, sHackDone, sMission, sDanger, sMining, setAmbient } from "./sound.js";
 
 let state = null;
 let helpCommands = [];
@@ -27,6 +27,12 @@ function updateNavbar(s) {
   $("stat-heat").textContent = "heat " + Math.round(s.heat);
   $("stat-heat").style.color = s.heat >= 60 ? "#ef4444" : s.heat >= 35 ? "#eab308" : "";
   $("stat-style").textContent = "style " + s.style;
+  const hatEl = $("stat-hat");
+  if (hatEl) {
+    const m = Math.round(s.morality ?? 25);
+    hatEl.textContent = `⚖ ${s.hat || "gray"} ${m}`;
+    hatEl.style.color = m >= 67 ? "#ef4444" : m <= 33 ? "#e0e7ff" : "#a1a1aa";
+  }
   $("stat-title").textContent = s.title;
   const slotEl = $("stat-slot");
   if (slotEl) slotEl.textContent = "slot " + (s.slot || 1);
@@ -87,10 +93,18 @@ const LOGIN_TXT = {
   },
 };
 
+// track what we've already made sound for, so events fire once
+const playedAch = new Set();
+let playedLevel = 0;
+let lastHeatBand = -1;
+let lastMiningSound = 0;
+
 function applyState(s) {
   state = s;
   term.setSettings(s.settings);
   setSound(s.settings.sound);
+  setVolume(Number(s.flags?.sndvol) || 0.5);
+  setAmbient(s.flags?.ambient === true);
   applyTheme(s.settings.theme);
   applyFont(s.settings.fontsize);
   updateNavbar(s);
@@ -98,6 +112,38 @@ function applyState(s) {
   setLoginTexts(LOGIN_TXT[s.flags?.lang === "fr" ? "fr" : "en"]);
   setShellLang(s.flags?.lang === "fr" ? "fr" : "en");
   setLocked(s.identified === false);
+  soundEvents(s);
+}
+
+// fire one-shot sounds when the state changes in meaningful ways
+function soundEvents(s) {
+  if (!state) return;
+  // new achievements
+  const ach = s.achievements || [];
+  const fresh = ach.filter((a) => !playedAch.has(a));
+  if (fresh.length) {
+    fresh.forEach((a) => playedAch.add(a));
+    sAchievement();
+  }
+  // level up
+  const lvl = s.level || 1;
+  if (lvl > playedLevel) {
+    playedLevel = lvl;
+    sLevelUp();
+  }
+  // heat danger band (crossing 60 / 80)
+  const heat = Math.round(s.heat || 0);
+  const band = heat >= 80 ? 2 : heat >= 60 ? 1 : 0;
+  if (band > lastHeatBand && band > 0) {
+    if (band === 2) sDanger(); else sAlarm();
+  }
+  lastHeatBand = band;
+  // mining tick sound (throttled — once per ~2s)
+  const now = performance.now();
+  if (s.flags?.minerActive === true && now - lastMiningSound > 2000) {
+    lastMiningSound = now;
+    sMining();
+  }
 }
 
 async function runCommand(val) {
@@ -111,12 +157,21 @@ async function runCommand(val) {
       else term.clearHighlight();
     }
     if (data.reset) term.clearOutput();
-    if (data.screensaver) showScreensaver();
+    if (data.screensaver) { showScreensaver(); sScreensaver(); }
     // the moment the player logs in: play the OS boot, then reveal the desktop
     if (state && state.identified === false && data.state?.identified === true && !booted) {
       booted = true;
+      sBoot();
       playBoot(data.state.name, () => { term.focusInput(); });
     }
+    // action sounds driven by the response lines (no extra server round-trips)
+    const raw = (data.lines || []).map((l) => l.t || "").join("\n");
+    const low = raw.toLowerCase();
+    if (/^hack\b/.test(val.trim()) && data.state?.flags?.pendingHack) sHackStart();
+    if (/récupérés|skimmed/.test(low) && /hack|pirat/i.test(low)) sHackDone();
+    if (/mission.*(livr|termin|paid)|terminée et|deliver/.test(low)) sMission();
+    if (low.includes("puppycoin") && (low.includes("acheté") || low.includes("bought"))) sCoin();
+    if (low.includes("🔥") || low.includes("🚨") || /heat.*(crit|dang|max)/i.test(low)) sWarning();
     if (data.state) applyState(data.state);
     if (data.nudge) addMsg("ai", data.nudge.text, true);
     term.finishSubmit();
@@ -135,6 +190,18 @@ function showScreensaver() {
   overlay.classList.add("active");
   if (saverTimer) clearTimeout(saverTimer);
   saverTimer = setTimeout(() => overlay.classList.remove("active"), 8000);
+}
+
+// power events: the terminal drives these from the powered-off state
+function watchPower() {
+  setInterval(() => {
+    if (!state) return;
+    const off = state.powered === false;
+    const was = document.body.classList.contains("powered-off");
+    if (off && !was) sPowerOff();
+    if (!off && was) sShutdown();
+    document.body.classList.toggle("powered-off", off);
+  }, 800);
 }
 
 async function boot() {
@@ -176,4 +243,5 @@ async function boot() {
   term.focusInput();
 }
 
+watchPower();
 boot();

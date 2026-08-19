@@ -2,7 +2,7 @@ import type { Command } from "./types";
 import type { Line } from "../output";
 import { blank, dim, divider, err, info, money, ok, title, warn, fmtMoney } from "../output";
 import { templateById, ensureOffers, missionTitle, missionFlavor } from "../missions";
-import { addNews, logEvent, langOf, addFactionRep, trackEarned, addXp } from "../engine";
+import { addNews, logEvent, langOf, addFactionRep, trackEarned, addXp, shiftMorality } from "../engine";
 import { t } from "../i18n";
 import { pick } from "../i18n";
 
@@ -80,6 +80,9 @@ export const missionsCmd: Command = {
           if (opt.faction) addFactionRep(g, opt.faction.branch, opt.faction.n, lines);
           if (opt.flag) g.flags[opt.flag.key] = opt.flag.value;
           if (opt.flag2) g.flags[opt.flag2.key] = opt.flag2.value;
+          // hat alignment: the job's tint + the choice made
+          const baseShift = tmp.hat === "black" ? 2 : tmp.hat === "white" ? -2 : 0;
+          shiftMorality(g, baseShift + (opt.hatShift || 0), lines);
           const c = (g.flags.career as Record<string, number>) || {};
           c.missionsDone = (c.missionsDone || 0) + 1;
           c.twists = (c.twists || 0) + 1;
@@ -140,6 +143,11 @@ export const missionsCmd: Command = {
       g.flags.career = c;
       if (tmp?.needsBranch) {
         addFactionRep(g, tmp.needsBranch, 2, lines);
+      }
+      // hat alignment: ordinary missions carry a small drift (twist missions
+      // apply their own above — the option's hatShift already includes it)
+      if (!tmp?.twist && tmp?.hat) {
+        shiftMorality(g, tmp.hat === "black" ? 2 : tmp.hat === "white" ? -2 : 0, lines);
       }
       g.flags.aiReact = "mission_done";
       lines.push(info(`   ${missionFlavor(lang, m)}`));

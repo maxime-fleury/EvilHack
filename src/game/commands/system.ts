@@ -31,7 +31,7 @@ export const resetCmd: Command = {
     return {
       lines: [
         dim(t(lang, "reset.wipe")),
-        ok(t(lang, "reset.ok")),
+        ok(t(lang, "reset.ok", { name: g.name })),
         ...introLines(lang),
         dim(t(lang, "reset.again")),
       ],

@@ -21,6 +21,11 @@ const L = (lang) => ({
     noInv: "Frank est un stock. Frank est triste.", noSoft: "aucun logiciel",
     shopHint: "Améliore avec <b>buy</b> dans le terminal, ou visite le faux Tor pour des programmes : <b>tor</b>.",
     commands: "COMMANDES", helpTip: "Clique sur une commande pour la remplir dans le terminal. Tape <b>help &lt;cmd&gt;</b> pour les détails. Tab complète automatiquement.",
+    sTheme: "Thème", sFont: "Taille de police", sAnim: "Animations", sSound: "Sons", sVolume: "Volume", sAmbient: "Bruit ambiant", sLang: "Langue",
+    hat: "Alignement (0 white · 50 gray · 100 black)",
+    aiName: "Nom de l'assistante IA", aiPrompt: "Prompt de l'assistante IA (éditable)", server: "Serveur (LM Studio)", urlPort: "URL + port — ex. http://127.0.0.1:3007",
+    dangerZone: "Zone dangereuse", dangerText: "Efface cette sauvegarde et repars de zéro. Frank se souviendra. (Garde la langue et les préférences.)", resetSave: "☠ reset la sauvegarde", applySettings: "appliquer les réglages ➤", testConn: "tester la connexion ➤",
+    statusOnline: (u) => `statut : EN LIGNE ✓ (${u})`, statusOffline: (u) => `statut : HORS LIGNE ✗ (${u})`, statusUnknown: "statut : inconnu", checking: "vérification…",
   },
   en: {
     title: "title", money: "money", style: "style", rep: "rep", heat: "heat", clock: "clock",
@@ -39,6 +44,11 @@ const L = (lang) => ({
     noInv: "Frank is stock. Frank is sad.", noSoft: "no software",
     shopHint: "Upgrade with <b>buy</b> in the terminal, or visit the fake Tor for programs: <b>tor</b>.",
     commands: "COMMANDS", helpTip: "Click a command to fill the terminal. Type <b>help &lt;cmd&gt;</b> for details. Tab autocompletes.",
+    sTheme: "theme", sFont: "font size", sAnim: "animations", sSound: "sound", sVolume: "volume", sAmbient: "ambient hum", sLang: "language",
+    hat: "Alignment (0 white · 50 gray · 100 black)",
+    aiName: "AI assistant name", aiPrompt: "AI assistant prompt (editable)", server: "server (LM Studio)", urlPort: "URL + port — e.g. http://127.0.0.1:3007",
+    dangerZone: "danger zone", dangerText: "Wipe this save and start from zero. Frank will remember. (Keeps language & preferences.)", resetSave: "☠ reset save", applySettings: "apply settings ➤", testConn: "test connection ➤",
+    statusOnline: (u) => `status: ONLINE ✓ (${u})`, statusOffline: (u) => `status: OFFLINE ✗ (${u})`, statusUnknown: "status: unknown", checking: "checking…",
   },
 })[lang === "fr" ? "fr" : "en"];
 
@@ -91,6 +101,7 @@ export function renderStats(state, actions) {
            <div class="pbar"><div style="width:${heatPct}%;background:${heatColor}"></div></div></div>
        </div>
      </div>` +
+    card(kv(L_.hat, `<span style="color:${(state.morality ?? 25) >= 67 ? "#ef4444" : (state.morality ?? 25) <= 33 ? "#e0e7ff" : "#a1a1aa"}">${esc(state.hat || "gray")} · ${Math.round(state.morality ?? 25)}/100</span>`)) +
     card(kv(L_.clock, esc(state.clock))) +
     (() => {
       return `<div class="panel-card"><div class="k">Lv.${lvl} · ${xp} XP ${lvl < 20 ? `(${into}/${span})` : "(MAX)"}</div>` +
@@ -312,41 +323,48 @@ export function renderHelp(commands, actions, state) {
 export function renderSettings(state, actions) {
   const el = document.getElementById("panel-settings");
   const s = state.settings;
+  const L_ = L(state.flags?.lang);
+  const onOff = (v) => (v ? "on" : "off");
   el.innerHTML =
-    `<div class="setting-row"><label for="set-theme">theme</label><select id="set-theme" class="form-select form-select-sm" style="width:auto">${["green", "amber", "blue", "matrix", "purple"]
+    `<div class="setting-row"><label for="set-theme">${L_.sTheme}</label><select id="set-theme" class="form-select form-select-sm" style="width:auto">${["green", "amber", "blue", "matrix", "purple"]
       .map((t) => `<option value="${t}" ${s.theme === t ? "selected" : ""}>${t}</option>`)
       .join("")}</select></div>` +
-    `<div class="setting-row"><label for="set-font">font size</label><select id="set-font" class="form-select form-select-sm" style="width:auto">${["sm", "md", "lg"]
+    `<div class="setting-row"><label for="set-font">${L_.sFont}</label><select id="set-font" class="form-select form-select-sm" style="width:auto">${["sm", "md", "lg"]
       .map((t) => `<option value="${t}" ${s.fontsize === t ? "selected" : ""}>${t}</option>`)
       .join("")}</select></div>` +
-    `<div class="setting-row"><label for="set-anim">animations</label><select id="set-anim" class="form-select form-select-sm" style="width:auto">${["on", "off"]
-      .map((t) => `<option value="${t}" ${(s.anim ? "on" : "off") === t ? "selected" : ""}>${t}</option>`)
+    `<div class="setting-row"><label for="set-anim">${L_.sAnim}</label><select id="set-anim" class="form-select form-select-sm" style="width:auto">${["on", "off"]
+      .map((t) => `<option value="${t}" ${onOff(s.anim) === t ? "selected" : ""}>${t}</option>`)
       .join("")}</select></div>` +
-    `<div class="setting-row"><label for="set-sound">sound</label><select id="set-sound" class="form-select form-select-sm" style="width:auto">${["on", "off"]
-      .map((t) => `<option value="${t}" ${(s.sound ? "on" : "off") === t ? "selected" : ""}>${t}</option>`)
+    `<div class="setting-row"><label for="set-sound">${L_.sSound}</label><select id="set-sound" class="form-select form-select-sm" style="width:auto">${["on", "off"]
+      .map((t) => `<option value="${t}" ${onOff(s.sound) === t ? "selected" : ""}>${t}</option>`)
       .join("")}</select></div>` +
-    `<div class="setting-row"><label for="set-lang">language</label><select id="set-lang" class="form-select form-select-sm" style="width:auto">${["en", "fr"]
+    `<div class="setting-row"><label for="set-vol">${L_.sVolume}</label><input id="set-vol" type="range" min="0" max="100" value="${Math.round((Number(state.flags.sndvol) || 0.5) * 100)}" class="form-range" style="width:120px" /></div>` +
+    `<div class="setting-row"><label for="set-amb">${L_.sAmbient}</label><select id="set-amb" class="form-select form-select-sm" style="width:auto">${["off", "on"]
+      .map((t) => `<option value="${t}" ${onOff(state.flags.ambient) === t ? "selected" : ""}>${t}</option>`)
+      .join("")}</select></div>` +
+    `<div class="setting-row"><label for="set-lang">${L_.sLang}</label><select id="set-lang" class="form-select form-select-sm" style="width:auto">${["en", "fr"]
       .map((t) => `<option value="${t}" ${(state.flags.lang || "en") === t ? "selected" : ""}>${t}</option>`)
       .join("")}</select></div>` +
-    `<div class="panel-card mt-2"><div class="k">AI assistant name</div><input id="set-ainame" class="form-control form-control-sm mt-1" value="${esc(state.flags.ainame || "Noro-chan")}" /></div>` +
-    `<div class="panel-card"><div class="k">AI assistant prompt (editable)</div><textarea id="set-aiprompt" class="form-control form-control-sm mt-1 ai-prompt">${esc(
+    `<div class="panel-card mt-2"><div class="k">${L_.aiName}</div><input id="set-ainame" class="form-control form-control-sm mt-1" value="${esc(state.flags.ainame || "Noro-chan")}" /></div>` +
+    `<div class="panel-card"><div class="k">${L_.aiPrompt}</div><textarea id="set-aiprompt" class="form-control form-control-sm mt-1 ai-prompt">${esc(
       state.flags.aiprompt || state.flags.aiDefaultPrompt || ""
     )}</textarea>` +
     `<div class="v mt-1" style="font-size:.68rem;color:var(--term-dim)">${state.flags.aiprompt ? "" : state.flags?.lang === "fr" ? "Prompt par défaut — modifie-le pour changer la personnalité de l'IA." : "Default prompt — edit it to change the AI's personality."}</div></div>` +
-    `<div class="panel-card"><div class="k">server</div><div class="v mt-1" style="font-size:.75rem">AI endpoint: <b>${esc(state.flags.aiurl || "http://127.0.0.1:3007")}</b> (LM Studio)</div><div class="v mt-1" style="font-size:.72rem" id="ai-status">status: unknown</div><button class="btn-term mt-2" id="test-ai">test connection ➤</button></div>` +
-    `<div class="panel-card danger-zone"><div class="k">danger zone</div><div class="v mt-1" style="font-size:.75rem">Wipe this save and start from zero. Frank will remember. (Keeps language & preferences.)</div><button class="btn-term btn-danger mt-2" id="reset-game">☠ reset save</button></div>` +
-    `<button class="btn-term mt-2" id="save-settings">apply settings ➤</button>`;
+    `<div class="panel-card"><div class="k">${L_.server}</div><div class="v mt-1" style="font-size:.72rem">${L_.urlPort}</div><input id="set-aiurl" class="form-control form-control-sm mt-1" value="${esc(state.flags.aiurl || "http://127.0.0.1:3007")}" placeholder="http://127.0.0.1:3007" /><div class="v mt-1" style="font-size:.72rem" id="ai-status">${L_.statusUnknown}</div><button class="btn-term mt-2" id="test-ai">${L_.testConn}</button></div>` +
+    `<div class="panel-card danger-zone"><div class="k">${L_.dangerZone}</div><div class="v mt-1" style="font-size:.75rem">${L_.dangerText}</div><button class="btn-term btn-danger mt-2" id="reset-game">${L_.resetSave}</button></div>` +
+    `<button class="btn-term mt-2" id="save-settings">${L_.applySettings}</button>`;
   el.querySelectorAll("select, input, textarea").forEach((n) =>
     n.addEventListener("change", () => el.querySelector("#save-settings").style.display = "inline-block")
   );
   const statusEl = el.querySelector("#ai-status");
   el.querySelector("#test-ai").addEventListener("click", async () => {
-    statusEl.textContent = "checking…";
+    statusEl.textContent = L_.checking;
+    const url = el.querySelector("#set-aiurl").value.trim() || "http://127.0.0.1:3007";
     try {
-      const d = await aiStatus();
-      statusEl.textContent = d.online ? "status: Noro-chan is ONLINE ✓" : "status: Noro-chan is OFFLINE ✗";
+      const d = await aiStatus(url);
+      statusEl.textContent = d.online ? L_.statusOnline(url) : L_.statusOffline(url);
     } catch {
-      statusEl.textContent = "status: can't reach the server";
+      statusEl.textContent = L_.statusOffline(url);
     }
   });
   el.querySelector("#save-settings").addEventListener("click", () => {
@@ -354,13 +372,16 @@ export function renderSettings(state, actions) {
     const font = el.querySelector("#set-font").value;
     const anim = el.querySelector("#set-anim").value;
     const sound = el.querySelector("#set-sound").value;
+    const vol = (Number(el.querySelector("#set-vol").value) || 50) / 100;
+    const ambient = el.querySelector("#set-amb").value === "on";
     const lang = el.querySelector("#set-lang").value;
     const ainame = el.querySelector("#set-ainame").value;
     const aiprompt = el.querySelector("#set-aiprompt").value;
-    actions.setSettings({ theme, fontsize: font, anim, sound, lang, ainame, aiprompt });
+    const aiurl = el.querySelector("#set-aiurl").value.trim() || "http://127.0.0.1:3007";
+    actions.setSettings({ theme, fontsize: font, anim, sound, sndvol: vol, ambient, lang, ainame, aiprompt, aiurl });
   });
   el.querySelector("#reset-game").addEventListener("click", () => {
-    if (confirm("Reset the save? Everything will be wiped. Frank will remember.")) {
+    if (confirm(state.flags?.lang === "fr" ? "Réinitialiser la sauvegarde ? Tout sera effacé. Frank se souviendra." : "Reset the save? Everything will be wiped. Frank will remember.")) {
       actions.runCommand("reset");
     }
   });

@@ -63,8 +63,9 @@ export function fmtMoney(n: number): string {
 }
 
 export function fmtClock(day: number, minutes: number): string {
-  const h = Math.floor(minutes / 60) % 24;
-  const m = minutes % 60;
+  const total = Math.floor(minutes); // minutes can be fractional after mining ticks
+  const h = Math.floor(total / 60) % 24;
+  const m = total % 60;
   return `Day ${day} · ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
