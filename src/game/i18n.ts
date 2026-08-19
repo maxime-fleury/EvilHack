@@ -136,6 +136,7 @@ const CAT: Record<string, Bilingual> = {
   "flex.news": { en: "Local hacker {title} spotted flexing unmatched drip", fr: "Un hacker local, {title}, aperçu en train de flex un drip inégalé" },
   "flex.newsBody": { en: "Witnesses report the drip was 'significant'. Several pigeons confirmed.", fr: "Des témoins rapportent que le drip était « significatif ». Plusieurs pigeons ont confirmé." },
   "flex.famous": { en: "The Daily Leak wrote about your drip. You're famous now. Sort of.", fr: "The Daily Leak a écrit sur ton drip. T'es célèbre, maintenant. En quelque sorte." },
+  "settings.wallLocked": { en: "That wallpaper is still locked — grow your legend first (rep, hat, drip, prestige).", fr: "Ce fond d'écran est encore verrouillé — fais grandir ta légende d'abord (rep, chapeau, drip, prestige)." },
   "inv.title": { en: "{name}'s gear", fr: "L'équipement de {name}" },
   "inv.lifestyle": { en: "Lifestyle: {l}", fr: "Style de vie : {l}" },
   "inv.nothing": { en: "nothing. your room is a void of beige.", fr: "rien. votre chambre est un vide beige." },

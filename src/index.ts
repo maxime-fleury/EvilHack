@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join, extname, normalize } from "node:path";
 import { getDb } from "./db";
-import { loadGame, dispatch, resolve, snapshot, langOf, saveGame, isIdentified } from "./game/engine";
+import { loadGame, dispatch, resolve, snapshot, langOf, saveGame, isIdentified, wallpaperUnlocked } from "./game/engine";
 import { introLines } from "./game/intro";
 import { complete, registry } from "./game/commands/registry";
 import { shopSnapshot } from "./game/shop";
@@ -86,10 +86,11 @@ async function handler(req: Request): Promise<Response> {
     const body = await readJson(req);
     const g = loadGame(db);
     const obj = (body.settings ?? {}) as Record<string, unknown>;
-    const KEYS = new Set(["theme", "fontsize", "anim", "sound", "lang", "ainame", "aiurl", "aimodel", "aiprompt", "sndvol", "ambient"]);
+    const KEYS = new Set(["theme", "fontsize", "anim", "sound", "lang", "ainame", "aiurl", "aimodel", "aiprompt", "sndvol", "ambient", "wallpaper", "wallpaperUrl"]);
     const BOOL_KEYS = new Set(["anim", "sound", "ambient"]);
     for (const [k, v] of Object.entries(obj)) {
       if (!KEYS.has(k)) continue;
+      if (k === "wallpaper" && typeof v === "string" && !wallpaperUnlocked(g, v)) continue; // story-gated
       if (BOOL_KEYS.has(k)) g.flags[k] = v === true || v === "on" || v === "true";
       else g.flags[k] = typeof v === "boolean" ? v : String(v);
     }

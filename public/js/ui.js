@@ -21,7 +21,8 @@ const L = (lang) => ({
     noInv: "Frank est un stock. Frank est triste.", noSoft: "aucun logiciel",
     shopHint: "Améliore avec <b>buy</b> dans le terminal, ou visite le faux Tor pour des programmes : <b>tor</b>.",
     commands: "COMMANDES", helpTip: "Clique sur une commande pour la remplir dans le terminal. Tape <b>help &lt;cmd&gt;</b> pour les détails. Tab complète automatiquement.",
-    sTheme: "Thème", sFont: "Taille de police", sAnim: "Animations", sSound: "Sons", sVolume: "Volume", sAmbient: "Bruit ambiant", sLang: "Langue",
+    sTheme: "Thème", sFont: "Taille de police", sAnim: "Animations", sSound: "Sons", sVolume: "Volume", sAmbient: "Bruit ambiant", sLang: "Langue", sWall: "Fond d'écran", wallUpload: "ou importe une image locale",
+    wallReqRep: "Rép. {n} requis", wallReqHat: "Alignement Black Hat requis", wallReqDrip: "Drip rang 4+ ou Gold-Plated Frank requis", wallReqPrestige: "Prestige {n}+ requis", wallBig: "Image trop lourde (max 1,5 Mo) — le disque de Frank est déjà assez lent.",
     hat: "Alignement (0 white · 50 gray · 100 black)",
     aiName: "Nom de l'assistante IA", aiPrompt: "Prompt de l'assistante IA (éditable)", server: "Serveur (LM Studio)", urlPort: "URL + port — ex. http://127.0.0.1:3007",
     dangerZone: "Zone dangereuse", dangerText: "Efface cette sauvegarde et repars de zéro. Frank se souviendra. (Garde la langue et les préférences.)", resetSave: "☠ reset la sauvegarde", applySettings: "appliquer les réglages ➤", testConn: "tester la connexion ➤",
@@ -44,13 +45,40 @@ const L = (lang) => ({
     noInv: "Frank is stock. Frank is sad.", noSoft: "no software",
     shopHint: "Upgrade with <b>buy</b> in the terminal, or visit the fake Tor for programs: <b>tor</b>.",
     commands: "COMMANDS", helpTip: "Click a command to fill the terminal. Type <b>help &lt;cmd&gt;</b> for details. Tab autocompletes.",
-    sTheme: "theme", sFont: "font size", sAnim: "animations", sSound: "sound", sVolume: "volume", sAmbient: "ambient hum", sLang: "language",
+    sTheme: "theme", sFont: "font size", sAnim: "animations", sSound: "sound", sVolume: "volume", sAmbient: "ambient hum", sLang: "language", sWall: "wallpaper", wallUpload: "or import a local image",
+    wallReqRep: "rep {n} required", wallReqHat: "Black Hat alignment required", wallReqDrip: "style rank 4+ or Gold-Plated Frank required", wallReqPrestige: "prestige {n}+ required", wallBig: "Image too heavy (max 1.5MB) — Frank's disk is slow enough already.",
     hat: "Alignment (0 white · 50 gray · 100 black)",
     aiName: "AI assistant name", aiPrompt: "AI assistant prompt (editable)", server: "server (LM Studio)", urlPort: "URL + port — e.g. http://127.0.0.1:3007",
     dangerZone: "danger zone", dangerText: "Wipe this save and start from zero. Frank will remember. (Keeps language & preferences.)", resetSave: "☠ reset save", applySettings: "apply settings ➤", testConn: "test connection ➤",
     statusOnline: (u) => `status: ONLINE ✓ (${u})`, statusOffline: (u) => `status: OFFLINE ✗ (${u})`, statusUnknown: "status: unknown", checking: "checking…",
   },
 })[lang === "fr" ? "fr" : "en"];
+
+// ── Wallpapers ────────────────────────────────────────────────────────────
+// Story-progressive: each one unlocks as your legend grows (rep, hat, drip,
+// prestige). `custom` is always available.
+export const WALLS = [
+  { id: "matrix", en: "Matrix rain", fr: "Pluie Matrix", req: null },
+  { id: "circuit", en: "Circuit board", fr: "Circuit imprimé", req: (s) => s.rep >= 10, reqL: (L_) => L_.wallReqRep.replace("{n}", 10) },
+  { id: "deepnet", en: "Deepnet nodes", fr: "Nœuds du deepnet", req: (s) => s.rep >= 20 || (s.prestige || 0) >= 1, reqL: (L_) => `${L_.wallReqRep.replace("{n}", 20)} / ${L_.wallReqPrestige.replace("{n}", 1)}` },
+  { id: "nightcity", en: "Night city", fr: "Ville de nuit", req: (s) => (s.morality ?? 25) >= 67 || (s.prestige || 0) >= 2, reqL: (L_) => `${L_.wallReqHat} / ${L_.wallReqPrestige.replace("{n}", 2)}` },
+  { id: "gold", en: "Gold drip", fr: "Drip doré", req: (s) => ((s.flags?.bling) || []).includes("gold") || (s.styleRank || 0) >= 4, reqL: (L_) => L_.wallReqDrip },
+  { id: "custom", en: "Custom — your own", fr: "Personnalisé — le tien", req: null },
+];
+
+export function unlockedWalls(s) {
+  return WALLS.filter((w) => !w.req || w.req(s)).map((w) => w.id);
+}
+
+export function wallpaperList(state) {
+  const L_ = L(state.flags?.lang);
+  return WALLS.map((w) => ({
+    id: w.id,
+    label: state.flags?.lang === "fr" ? w.fr : w.en,
+    locked: !!(w.req && !w.req(state)),
+    reqLabel: w.req && !w.req(state) ? w.reqL(L_) : "",
+  }));
+}
 
 function card(inner) {
   return `<div class="panel-card">${inner}</div>`;
@@ -345,6 +373,15 @@ export function renderSettings(state, actions) {
     `<div class="setting-row"><label for="set-lang">${L_.sLang}</label><select id="set-lang" class="form-select form-select-sm" style="width:auto">${["en", "fr"]
       .map((t) => `<option value="${t}" ${(state.flags.lang || "en") === t ? "selected" : ""}>${t}</option>`)
       .join("")}</select></div>` +
+    (() => {
+      const walls = wallpaperList(state);
+      const cur = s.wallpaper || "matrix";
+      return `<div class="setting-row"><label for="set-wall">${L_.sWall}</label><select id="set-wall" class="form-select form-select-sm" style="width:auto">${walls
+        .map((w) => `<option value="${w.id}" ${cur === w.id ? "selected" : ""} ${w.locked ? "disabled" : ""} title="${esc(w.reqLabel)}">${esc(w.label)}${w.locked ? " 🔒" : ""}</option>`)
+        .join("")}</select></div>` +
+        `<div class="setting-row wall-custom-row" style="${cur === "custom" ? "" : "display:none"}"><div class="k">URL</div><input id="set-wallurl" class="form-control form-control-sm mt-1" value="${esc(state.flags.wallpaperUrl || "")}" placeholder="https://…" /></div>` +
+        `<div class="setting-row wall-custom-row" style="${cur === "custom" ? "" : "display:none"}"><label>${L_.wallUpload}</label><input type="file" id="set-wallfile" accept="image/*" class="form-control form-control-sm" style="width:190px" /></div>`;
+    })() +
     `<div class="panel-card mt-2"><div class="k">${L_.aiName}</div><input id="set-ainame" class="form-control form-control-sm mt-1" value="${esc(state.flags.ainame || "Noro-chan")}" /></div>` +
     `<div class="panel-card"><div class="k">${L_.aiPrompt}</div><textarea id="set-aiprompt" class="form-control form-control-sm mt-1 ai-prompt">${esc(
       state.flags.aiprompt || state.flags.aiDefaultPrompt || ""
@@ -356,6 +393,28 @@ export function renderSettings(state, actions) {
   el.querySelectorAll("select, input, textarea").forEach((n) =>
     n.addEventListener("change", () => el.querySelector("#save-settings").style.display = "inline-block")
   );
+  const wallSel = el.querySelector("#set-wall");
+  const toggleWallRows = () => {
+    const show = wallSel.value === "custom";
+    el.querySelectorAll(".wall-custom-row").forEach((r) => (r.style.display = show ? "" : "none"));
+  };
+  wallSel.addEventListener("change", toggleWallRows);
+  const wallFile = el.querySelector("#set-wallfile");
+  if (wallFile) wallFile.addEventListener("change", () => {
+    const f = wallFile.files?.[0];
+    if (!f) return;
+    if (f.size > 1.5 * 1024 * 1024) {
+      alert(L_.wallBig);
+      wallFile.value = "";
+      return;
+    }
+    const rd = new FileReader();
+    rd.onload = () => {
+      actions.setSettings({ wallpaper: "custom" });
+      actions.applyLocalWall(String(rd.result));
+    };
+    rd.readAsDataURL(f);
+  });
   const statusEl = el.querySelector("#ai-status");
   el.querySelector("#test-ai").addEventListener("click", async () => {
     statusEl.textContent = L_.checking;
@@ -375,10 +434,12 @@ export function renderSettings(state, actions) {
     const vol = (Number(el.querySelector("#set-vol").value) || 50) / 100;
     const ambient = el.querySelector("#set-amb").value === "on";
     const lang = el.querySelector("#set-lang").value;
+    const wallpaper = wallSel.value;
+    const wallpaperUrl = el.querySelector("#set-wallurl")?.value.trim() || "";
     const ainame = el.querySelector("#set-ainame").value;
     const aiprompt = el.querySelector("#set-aiprompt").value;
     const aiurl = el.querySelector("#set-aiurl").value.trim() || "http://127.0.0.1:3007";
-    actions.setSettings({ theme, fontsize: font, anim, sound, sndvol: vol, ambient, lang, ainame, aiprompt, aiurl });
+    actions.setSettings({ theme, fontsize: font, anim, sound, sndvol: vol, ambient, lang, ainame, aiprompt, aiurl, wallpaper, wallpaperUrl });
   });
   el.querySelector("#reset-game").addEventListener("click", () => {
     if (confirm(state.flags?.lang === "fr" ? "Réinitialiser la sauvegarde ? Tout sera effacé. Frank se souviendra." : "Reset the save? Everything will be wiped. Frank will remember.")) {

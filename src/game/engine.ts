@@ -142,6 +142,16 @@ export function blingOf(g: Game): string[] {
   return (g.flags.bling as string[]) || [];
 }
 
+/** Story-gated wallpapers: rep tiers, Black Hat, prestige, drip. */
+export function wallpaperUnlocked(g: Game, id: string): boolean {
+  if (id === "matrix" || id === "custom") return true;
+  if (id === "circuit") return g.rep >= 10;
+  if (id === "deepnet") return g.rep >= 20 || prestigeCount(g) >= 1;
+  if (id === "nightcity") return moralityOf(g) >= 67 || prestigeCount(g) >= 2;
+  if (id === "gold") return blingOf(g).includes("gold") || styleRank(g) >= 4;
+  return false;
+}
+
 export function cpuPower(g: Game): number {
   return (1 + g.cpu * 0.9) * rgbPenalty(g);
 }
@@ -1517,7 +1527,7 @@ export function dispatch(g: Game, raw: string): CmdResult {
 export async function resolve(g: Game, res: CmdResult): Promise<{ lines: Line[]; state: State; nudge?: { name: string; text: string } | null }> {
   if (res.reset) {
     // wipe the story but keep the player's preferences (language, theme, AI…)
-    const keep = ["lang", "theme", "fontsize", "anim", "sound", "sndvol", "ambient", "ainame", "aiurl", "aimodel", "aiprompt"];
+    const keep = ["lang", "theme", "fontsize", "anim", "sound", "sndvol", "ambient", "ainame", "aiurl", "aimodel", "aiprompt", "wallpaper", "wallpaperUrl"];
     const prefs: Record<string, unknown> = {};
     for (const k of keep) if (g.flags[k] !== undefined) prefs[k] = g.flags[k];
     resetDb(g.db);
@@ -1590,7 +1600,7 @@ export interface State {
   crew: { id: string; hiredDay: number }[];
   prestige: number;
   market: { tor: Record<string, number>; dossiers: Record<string, number>; scandalDay: number };
-  settings: { theme: string; fontsize: string; anim: boolean; sound: boolean; lang: string };
+  settings: { theme: string; fontsize: string; anim: boolean; sound: boolean; lang: string; wallpaper: string };
   flags: Record<string, unknown>;
 }
 
@@ -1686,6 +1696,7 @@ export function snapshot(g: Game): State {
       anim: g.flags.anim !== false && g.flags.anim !== "off",
       sound: g.flags.sound !== false && g.flags.sound !== "off",
       lang: (g.flags.lang as Lang) || "en",
+      wallpaper: (g.flags.wallpaper as string) || "matrix",
     },
     flags: {
       ...g.flags,

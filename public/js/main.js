@@ -1,6 +1,6 @@
 import { cmd, getIntro, getHelp, getState, setSettingsApi } from "./api.js";
 import * as term from "./terminal.js";
-import { renderStats, renderMissions, renderInv, renderShop, renderPeople, renderNews, renderHelp, renderSettings } from "./ui.js";
+import { renderStats, renderMissions, renderInv, renderShop, renderPeople, renderNews, renderHelp, renderSettings, WALLS, unlockedWalls } from "./ui.js";
 import { initChat, addMsg, setupChat, setChatTabState } from "./chat.js";
 import { setupShell, setLocked, playBoot, showLogin, setLoginTexts, setShellLang } from "./os.js";
 import { setSound, setVolume, sBoot, sPowerOff, sShutdown, sScreensaver, sAchievement, sLevelUp, sAlarm, sWarning, sCoin, sHackStart, sHackDone, sMission, sDanger, sMining, setAmbient } from "./sound.js";
@@ -18,6 +18,45 @@ function applyTheme(theme) {
 function applyFont(size) {
   const out = $("terminal-output");
   out.style.fontSize = size === "lg" ? "1.1rem" : size === "sm" ? ".82rem" : ".95rem";
+}
+
+// ── Wallpaper ─────────────────────────────────────────────────────────────
+const WALL_KEYS = WALLS.map((w) => "wall-" + w.id);
+
+function applyWallpaper(s) {
+  const wall = s.settings?.wallpaper || "matrix";
+  document.body.classList.remove(...WALL_KEYS);
+  document.body.classList.add("wall-" + wall);
+  const url = String(s.flags?.wallpaperUrl || "").trim();
+  const local = localStorage.getItem("evilhack_wall_data") || "";
+  const img = url ? `url("${url.replace(/"/g, "%22")}")` : local ? `url("${local}")` : "none";
+  document.body.style.setProperty("--wall-img", img);
+  wallUnlockToast(s);
+}
+
+let wallToastTimer = null;
+let wallSeen = new Set(JSON.parse(localStorage.getItem("evilhack_wall_seen") || "[]"));
+
+function showWallToast(msg) {
+  const el = document.getElementById("wall-toast");
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add("show");
+  if (wallToastTimer) clearTimeout(wallToastTimer);
+  wallToastTimer = setTimeout(() => el.classList.remove("show"), 3500);
+}
+
+// story-progressive unlock toast — fires once per wallpaper, stored locally
+function wallUnlockToast(s) {
+  const now = unlockedWalls(s).filter((id) => id !== "custom");
+  const fresh = now.filter((id) => !wallSeen.has(id));
+  if (!fresh.length) return;
+  fresh.forEach((id) => wallSeen.add(id));
+  localStorage.setItem("evilhack_wall_seen", JSON.stringify([...wallSeen]));
+  const w = WALLS.find((x) => x.id === fresh[fresh.length - 1]);
+  if (!w) return;
+  const fr = s.flags?.lang === "fr";
+  showWallToast(fr ? `🔓 Nouveau fond d'écran débloqué : ${w.fr}` : `🔓 New wallpaper unlocked: ${w.en}`);
 }
 
 function updateNavbar(s) {
@@ -55,6 +94,19 @@ function updatePanels() {
       // direct API call — works even at the lock screen, unlike a terminal
       // command which the server would swallow as a login name
       setSettingsApi(cfg).then((d) => { if (d.state) applyState(d.state); });
+    },
+    applyLocalWall: (dataUrl) => {
+      try {
+        localStorage.setItem("evilhack_wall_data", dataUrl);
+        if (state) {
+          // apply instantly (the server flag syncs via setSettings)
+          document.body.classList.remove(...WALL_KEYS);
+          document.body.classList.add("wall-custom");
+          document.body.style.setProperty("--wall-img", `url("${dataUrl}")`);
+        }
+      } catch {
+        alert(state?.flags?.lang === "fr" ? "Image trop lourde pour le stockage local." : "Image too large for local storage.");
+      }
     },
   };
   renderStats(state, actions);
@@ -108,6 +160,7 @@ function applyState(s) {
   setAmbient(s.flags?.ambient === true);
   applyTheme(s.settings.theme);
   applyFont(s.settings.fontsize);
+  applyWallpaper(s);
   updateNavbar(s);
   updatePanels();
   setLoginTexts(LOGIN_TXT[s.flags?.lang === "fr" ? "fr" : "en"]);

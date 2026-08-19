@@ -1,6 +1,6 @@
 import type { Command } from "./types";
 import { blank, dim, divider, err, info, ok } from "../output";
-import { langOf } from "../engine";
+import { langOf, wallpaperUnlocked } from "../engine";
 import { t } from "../i18n";
 import { defaultPrompt } from "../aichat";
 
@@ -16,6 +16,8 @@ const KEYS: Record<string, SettingSpec> = {
   anim: { values: ["on", "off"], label: { en: "Typing/fade animation", fr: "Animation de frappe/transition" } },
   sound: { values: ["on", "off"], label: { en: "Terminal beeps", fr: "Bips du terminal" } },
   lang: { values: ["en", "fr"], label: { en: "Language", fr: "Langue" } },
+  wallpaper: { values: ["matrix", "circuit", "deepnet", "nightcity", "gold", "custom"], label: { en: "Desktop wallpaper", fr: "Fond d'écran" } },
+  wallpaperUrl: { free: true, label: { en: "Custom wallpaper URL", fr: "URL du fond d'écran custom" } },
   ainame: { free: true, label: { en: "AI assistant name", fr: "Nom de l'assistante IA" } },
   aiurl: { free: true, label: { en: "AI server URL (LM Studio)", fr: "URL du serveur IA (LM Studio)" } },
   aimodel: { free: true, label: { en: "AI model id (empty = auto-detect)", fr: "ID du modèle IA (vide = auto-détection)" } },
@@ -33,7 +35,7 @@ export const settingsCmd: Command = {
   aliases: ["config"],
   usage: "settings [set <key> <value> | set-all <json> | ai]",
   help: "View or change game settings.",
-  detail: "Keys: theme, fontsize, anim, sound, lang (en|fr), ainame, aiurl, aiprompt. `settings ai` shows the AI sidekick's editable persona prompt.",
+  detail: "Keys: theme, fontsize, anim, sound, lang (en|fr), wallpaper (matrix|circuit|deepnet|nightcity|gold|custom), ainame, aiurl, aiprompt. `settings ai` shows the AI sidekick's editable persona prompt.",
   run: (g, args) => {
     const lang = langOf(g);
     const lines = [];
@@ -46,6 +48,9 @@ export const settingsCmd: Command = {
       if (!spec) return { lines: [err(t(lang, "settings.unknown", { k: key, keys: Object.keys(KEYS).join(", ") }))], minutes: 0 };
       if (!spec.free && !spec.values!.includes(val)) {
         return { lines: [err(t(lang, "settings.badValue", { v: val, k: key, allowed: spec.values!.join("|") }))], minutes: 0 };
+      }
+      if (key === "wallpaper" && !wallpaperUnlocked(g, val)) {
+        return { lines: [err(t(lang, "settings.wallLocked", { v: val }))], minutes: 0 };
       }
       g.flags[key] = normalizeVal(key, val);
       lines.push(ok(t(lang, "settings.set", { k: key, v: val })));

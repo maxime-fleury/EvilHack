@@ -23,6 +23,7 @@ Play it entirely in the terminal: scan networks, pick your hack vector, break in
 - **Noro-chan** 🤖 — an optional AI sidekick (LM Studio, OpenAI-compatible endpoint) who *actually knows your game state*: money, gear, missions, recent activity. She teases you when you're stuck, celebrates your wins, mocks your losses, and remembers conversations across sessions. Fully editable persona prompt (per language).
 - **Fully bilingual** 🇫🇷🇬🇧 — switch FR/EN in the settings; commands stay in English.
 - **5 themes** — green, amber, blue, matrix, purple.
+- **Story-progressive wallpapers** — the desktop art evolves with your legend: matrix code rain → circuit board (rep 10) → deepnet nodes (rep 20 / prestige) → night city (Black Hat) → gold drip (top style). Set one in the settings, or add your own via URL or a local image file.
 - **No build step for the client** — plain ES modules + Bootstrap + mark.js from CDN. SQLite for saves. Bun for the server.
 
 ---
@@ -56,7 +57,7 @@ Open http://localhost:3000, click the lock screen, pick your hacker handle, and 
 | `arcs` | Optional side storylines with permanent perks |
 | `achievements` | Trophy collection (some hidden) |
 | `stats` / `career` / `legend` | Your legend so far — hours, best day, alignment journey |
-| `settings` | Theme, language, AI persona, server URL |
+| `settings` | Theme, language, wallpaper, AI persona, server URL |
 | `tutorial` | Replayable guided tutorial (8 chapters) |
 | `save` / `slots` / `reset` | Save slots & fresh starts |
 | `net` | The network map: your gear, your routes, what's in reach |
