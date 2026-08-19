@@ -2,7 +2,7 @@ import { cmd, getIntro, getHelp, getState, setSettingsApi } from "./api.js";
 import * as term from "./terminal.js";
 import { renderStats, renderMissions, renderInv, renderShop, renderPeople, renderNews, renderHelp, renderSettings, WALLS, unlockedWalls } from "./ui.js";
 import { initChat, addMsg, setupChat, setChatTabState } from "./chat.js";
-import { setupShell, setLocked, playBoot, showLogin, setLoginTexts, setShellLang } from "./os.js";
+import { setupShell, setLocked, playBoot, showLogin, setLoginTexts, setShellLang, openApp } from "./os.js";
 import { setSound, setVolume, sBoot, sPowerOff, sShutdown, sScreensaver, sAchievement, sLevelUp, sAlarm, sWarning, sCoin, sHackStart, sHackDone, sMission, sDanger, sMining, setAmbient } from "./sound.js";
 
 let state = null;
@@ -309,6 +309,8 @@ window.addEventListener("game-toast", (e) => showWallToast(e.detail));
 window.addEventListener("cmd-chip", (e) => {
   const inp = $("terminal-input");
   if (!inp) return;
+  // bring the terminal forward so the player sees the command land in it
+  openApp("terminal");
   term.focusInput();
   inp.value = String(e.detail || "");
   inp.dispatchEvent(new Event("input", { bubbles: true }));

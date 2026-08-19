@@ -227,7 +227,7 @@ export function suggestCommands(g: Game, lang: Lang): string[] {
     const targetHacked = steps[0]?.startsWith("✔") || steps[0]?.startsWith("✓");
     out.push(targetHacked ? `missions deliver ${m.id}` : `hack ${m.target}`);
   }
-  if (offered.length && !out.length) out.push(`missions`);
+  if (offered.length && !out.length) out.push(`missions accept ${offered[0].id}`);
   if (!out.length) out.push("scan");
   if (out.length === 1) out.push(g.heat >= 35 ? "missions" : "news");
   if (g.money < 50 && !out.includes("missions")) out.push("missions");
