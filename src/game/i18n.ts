@@ -359,6 +359,8 @@ const CAT: Record<string, Bilingual> = {
   "legend.money": { en: "Total earned: ${m}", fr: "Total gagné : {m}$" },
   "legend.hacks": { en: "Hacks completed: {n}", fr: "Hacks terminés : {n}" },
   "legend.missions": { en: "Missions delivered: {n}", fr: "Missions livrées : {n}" },
+  "legend.dossiers": { en: "Dossiers sold: {n}", fr: "Dossiers vendus : {n}" },
+  "legend.blackmails": { en: "Blackmails: {n} (you monster)", fr: "Chantages : {n} (monstre)" },
   "legend.bestDay": { en: "Best day: ${m} (day {d})", fr: "Meilleur jour : {m}$ (jour {d})" },
   "legend.favTarget": { en: "Favorite target: {t}", fr: "Cible favorite : {t}" },
   "legend.align": { en: "Alignment: {label} ({v}/100)", fr: "Alignement : {label} ({v}/100)" },

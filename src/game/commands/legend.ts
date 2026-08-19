@@ -20,6 +20,8 @@ export const legendCmd: Command = {
     lines.push(dim(t(lang, "legend.money", { m: c.moneyEarned || 0 })));
     lines.push(dim(t(lang, "legend.hacks", { n: c.hacksDone || 0 })));
     lines.push(dim(t(lang, "legend.missions", { n: c.missionsDone || 0 })));
+    if (c.dossiersSold) lines.push(dim(t(lang, "legend.dossiers", { n: c.dossiersSold })));
+    if (c.blackmails) lines.push(dim(t(lang, "legend.blackmails", { n: c.blackmails })));
     if (c.bestDay) lines.push(dim(t(lang, "legend.bestDay", { m: c.bestEarn || 0, d: c.bestDay })));
     if (c.favTarget) lines.push(dim(t(lang, "legend.favTarget", { t: c.favTarget })));
     lines.push(dim(t(lang, "legend.align", { label: hatLabel(lang, hatBand(g)), v: moralityOf(g) })));

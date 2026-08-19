@@ -43,9 +43,11 @@ export const settingsCmd: Command = {
 
     if (sub === "set") {
       const key = args[1]?.toLowerCase();
-      const val = args.slice(2).join(" ").toLowerCase();
+      const raw = args.slice(2).join(" ");
       const spec = KEYS[key || ""];
       if (!spec) return { lines: [err(t(lang, "settings.unknown", { k: key, keys: Object.keys(KEYS).join(", ") }))], minutes: 0 };
+      // free values (URLs, prompts, names) keep their case — lowercasing would mangle them
+      const val = spec.free ? raw : raw.toLowerCase();
       if (!spec.free && !spec.values!.includes(val)) {
         return { lines: [err(t(lang, "settings.badValue", { v: val, k: key, allowed: spec.values!.join("|") }))], minutes: 0 };
       }

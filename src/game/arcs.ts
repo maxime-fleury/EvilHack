@@ -167,7 +167,7 @@ export const ARCS: ArcDef[] = [
     steps: [
       { desc: { en: "Prove yourself — hack The Office Server", fr: "Faire ses preuves — hacker The Office Server" }, done: (g) => hacked(g, "The Office Server") },
       { desc: { en: "Complete Vautour's dossier (3/3 secrets)", fr: "Compléter le dossier de Vautour (3/3 secrets)" }, done: (g) => (g.contacts.find((c) => c.npc === "vautour")?.fragments || 0) >= 3 },
-      { desc: { en: "Deal with the mole — run 'blackmail vautour' (cash / favor / burn)", fr: "Régler la taupe — « blackmail vautour » (cash / favor / burn)" }, done: (g) => !!g.flags.merleChoice },
+      { desc: { en: "Deal with the mole — blackmail him, or expose him to the press", fr: "Régler la taupe — le faire chanter, ou l'exposer à la presse" }, done: (g) => !!g.flags.merleChoice || (g.contacts.find((c) => c.npc === "vautour")?.sold || 0) >= 1 },
     ],
     finale: [
       { en: "The mole is handled. MERLE's only reply is a single line: 'The Office remembers. If you ever need a problem to disappear — or to disappear a problem — you know the frequency.' The wire goes dead. Somewhere, a pigeon gains a second of peace.", fr: "La taupe est réglée. La seule réponse de MERLE est une ligne : « Le Bureau se souvient. Si un jour tu as besoin de faire disparaître un problème — ou de te faire disparaître d'un problème — tu connais la fréquence. » La ligne se coupe. Quelque part, un pigeon gagne une seconde de paix." },

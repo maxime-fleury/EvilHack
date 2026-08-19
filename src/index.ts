@@ -88,9 +88,13 @@ async function handler(req: Request): Promise<Response> {
     const obj = (body.settings ?? {}) as Record<string, unknown>;
     const KEYS = new Set(["theme", "fontsize", "anim", "sound", "lang", "ainame", "aiurl", "aimodel", "aiprompt", "sndvol", "ambient", "wallpaper", "wallpaperUrl"]);
     const BOOL_KEYS = new Set(["anim", "sound", "ambient"]);
+    const WALLS = ["matrix", "circuit", "deepnet", "nightcity", "gold", "custom"];
     for (const [k, v] of Object.entries(obj)) {
       if (!KEYS.has(k)) continue;
-      if (k === "wallpaper" && typeof v === "string" && !wallpaperUnlocked(g, v)) continue; // story-gated
+      if (k === "wallpaper") {
+        if (typeof v !== "string" || !WALLS.includes(v)) continue; // unknown id
+        if (!wallpaperUnlocked(g, v)) continue; // story-gated
+      }
       if (BOOL_KEYS.has(k)) g.flags[k] = v === true || v === "on" || v === "true";
       else g.flags[k] = typeof v === "boolean" ? v : String(v);
     }
