@@ -21,10 +21,30 @@ function scroll() {
 
 let youLabel = "you";
 
-export function addMsg(who, text, quiet = false) {
+let chipTitle = (x) => x;
+export function setChipTitle(fn) {
+  chipTitle = fn || ((x) => x);
+}
+
+export function addMsg(who, text, quiet = false, opts = {}) {
   const div = document.createElement("div");
   div.className = `msg ${who === "user" ? "user" : "ai"}`;
   div.innerHTML = `<span class="who">${who === "user" ? esc(youLabel) : esc(aiName)}</span>${esc(text)}`;
+  const chips = opts.suggestions || [];
+  if (chips.length) {
+    const row = document.createElement("div");
+    row.className = "cmd-chips";
+    chips.forEach((c) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "cmd-chip";
+      b.textContent = c;
+      b.title = chipTitle(c);
+      b.addEventListener("click", () => window.dispatchEvent(new CustomEvent("cmd-chip", { detail: c })));
+      row.appendChild(b);
+    });
+    div.appendChild(row);
+  }
   logEl.appendChild(div);
   scroll();
   if (!quiet) {
@@ -37,6 +57,7 @@ export function addMsg(who, text, quiet = false) {
       }
     }
   }
+  return div;
 }
 
 function esc(s) {
@@ -78,7 +99,9 @@ async function send(text) {
     const data = await chatSend(msg);
     hideTyping();
     const reply = data.reply || data.fallback || "…";
-    addMsg("ai", reply);
+    addMsg("ai", reply, false, { suggestions: data.suggestions || [] });
+    // Noro-chan occasionally runs a safe command herself
+    if (data.autoRun) window.dispatchEvent(new CustomEvent("cmd-run", { detail: data.autoRun }));
   } catch {
     hideTyping();
     addMsg("ai", "Hmm? My connection to the AI got cut… try again~");

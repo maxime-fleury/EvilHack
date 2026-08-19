@@ -227,7 +227,11 @@ async function runCommand(val) {
     if (low.includes("puppycoin") && (low.includes("acheté") || low.includes("bought"))) sCoin();
     if (low.includes("🔥") || low.includes("🚨") || /heat.*(crit|dang|max)/i.test(low)) sWarning();
     if (data.state) applyState(data.state);
-    if (data.nudge) addMsg("ai", data.nudge.text, true);
+    if (data.nudge) {
+      addMsg("ai", data.nudge.text, true, { suggestions: data.nudge.suggestions || [] });
+      // Noro-chan ran a command for you — execute it and let her comment
+      if (data.nudge.autoRun) runCommand(data.nudge.autoRun);
+    }
     term.finishSubmit();
     term.notifyResult(!data.lines?.some((l) => l.c === "err"));
   } catch (e) {
@@ -299,6 +303,24 @@ async function boot() {
 
 // generic toast channel — the settings panel uses it to confirm auto-saves
 window.addEventListener("game-toast", (e) => showWallToast(e.detail));
+
+// ── Noro-chan's command chips ─────────────────────────────────────────────
+// clicking a suggested command fills the terminal (player presses Enter to run)
+window.addEventListener("cmd-chip", (e) => {
+  const inp = $("terminal-input");
+  if (!inp) return;
+  term.focusInput();
+  inp.value = String(e.detail || "");
+  inp.dispatchEvent(new Event("input", { bubbles: true }));
+});
+// Noro-chan ran a command herself (from chat) — execute it with a comment
+window.addEventListener("cmd-run", (e) => {
+  const c = String(e.detail || "").trim();
+  if (!c) return;
+  const fr = state?.flags?.lang === "fr";
+  addMsg("ai", fr ? `Allez~ je m'en occupe pour toi : ${c}` : `Fine~ I'll handle this one: ${c}`, true);
+  runCommand(c);
+});
 
 watchPower();
 boot();

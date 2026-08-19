@@ -47,6 +47,10 @@ async function pickModel(flags: Record<string, unknown>): Promise<string> {
 export interface Nudge {
   name: string;
   text: string;
+  /** Exact commands Noro-chan suggests — the client renders them as clickable chips. */
+  suggestions?: string[];
+  /** A safe command Noro-chan runs *for* the player (scan/missions/news…). */
+  autoRun?: string;
 }
 
 // What the player just did, for the AI's context when commenting on actions.
@@ -206,6 +210,30 @@ export function missionGuide(g: Game, lang: Lang): string {
     ? "[GUIDE DE MISSION — si le joueur demande comment faire, donne-lui CES commandes exactes à taper]"
     : "[MISSION GUIDE — if the player asks what to do, give them THESE exact commands to type]";
   return `\n\n${hdr} ${parts.join("  ·  ")}`;
+}
+
+/**
+ * Deterministic, clickable next-step commands for the current situation.
+ * Used by the chat panel to render suggestion chips.
+ */
+export function suggestCommands(g: Game, lang: Lang): string[] {
+  const out: string[] = [];
+  const active = g.missions.filter((m) => m.status === "active");
+  const offered = g.missions.filter((m) => m.status === "offered");
+  for (const m of active) {
+    const steps = (() => {
+      try { return JSON.parse(m.steps) as string[]; } catch { return []; }
+    })();
+    const targetHacked = steps[0]?.startsWith("✔") || steps[0]?.startsWith("✓");
+    out.push(targetHacked ? `missions deliver ${m.id}` : `hack ${m.target}`);
+  }
+  if (offered.length && !out.length) out.push(`missions`);
+  if (!out.length) out.push("scan");
+  if (out.length === 1) out.push(g.heat >= 35 ? "missions" : "news");
+  if (g.money < 50 && !out.includes("missions")) out.push("missions");
+  const safe = ["scan", "missions", "news", "stats", "net", "market"];
+  for (const s of safe) if (out.length < 4 && !out.includes(s)) out.push(s);
+  return [...new Set(out)].slice(0, 4);
 }
 
 function gameDigest(g: Game, lang: Lang): string {
@@ -422,7 +450,7 @@ export async function maybeNudge(g: Game, out: Line[]): Promise<Nudge | null> {
     const final = (text || fallback).replace(/\bDave\b/g, pname);
     pushHistory(g, "assistant", final);
     out.push(info(`💬 ${name}: ${final}`));
-    return { name, text: final };
+    return { name, text: final, suggestions: suggestCommands(g, lang) };
   }
 
   // 2) proactive contextual hint — based on real stats, not random
@@ -432,7 +460,7 @@ export async function maybeNudge(g: Game, out: Line[]): Promise<Nudge | null> {
     f.lastNudge = now;
     const text = pick(lang, hint).replace(/\bDave\b/g, pname);
     out.push(info(`💬 ${name}: ${text}`));
-    return { name, text };
+    return { name, text, suggestions: suggestCommands(g, lang) };
   }
 
   // 3) stuck detection / rare random tease
@@ -443,7 +471,7 @@ export async function maybeNudge(g: Game, out: Line[]): Promise<Nudge | null> {
   f.lastNudge = now;
   const text = pick(lang, reason).replace(/\bDave\b/g, pname);
   out.push(info(`💬 ${name}: ${text}`));
-  return { name, text };
+  return { name, text, suggestions: suggestCommands(g, lang), autoRun: maybeAutoRun(g) };
 }
 
 /** Curated teasing line for an action reaction (used when LM Studio is offline). */
@@ -474,7 +502,10 @@ const REACT_CURATED: Record<string, Bilingual> = {
 };
 
 /** Used by /api/chat — the user talks to the AI in the Chat panel. */
-export async function chatReply(g: Game, message: string): Promise<string> {
+export async function chatReply(
+  g: Game,
+  message: string
+): Promise<{ reply: string; suggestions: string[]; autoRun?: string }> {
   const f = g.flags;
   const lang = ((f.lang as string) || "en") as Lang;
   const name = (f.ainame as string) || "Noro-chan";
@@ -500,7 +531,27 @@ export async function chatReply(g: Game, message: string): Promise<string> {
     ? `Hein~? Je n'ai pas entendu (LM Studio est hors ligne). Réessaie quand mon cerveau est branché, ${g.name || "Dave"}.`
     : `Huh~? Didn't catch that (LM Studio is offline). Try again when my brain is plugged in, ${g.name || "Dave"}.`);
   pushHistory(g, "assistant", final);
-  return final;
+  return { reply: final, suggestions: suggestCommands(g, lang), autoRun: wantsHelp ? maybeAutoRun(g) : undefined };
+}
+
+/**
+ * A safe command Noro-chan may run herself when the player is stuck. Only
+ * harmless, read-only commands — never hack/buy/deliver. Gated by a cooldown
+ * and a small chance so it feels proactive rather than scripted.
+ */
+function maybeAutoRun(g: Game): string | undefined {
+  const f = g.flags;
+  const last = (f.lastAutoRun as number) || 0;
+  const now = g.day * 1440 + g.minutes;
+  if (now - last < 240) return undefined; // ~4 in-game hours between auto-runs
+  const unknown = (f.unknownCount as number) || 0;
+  if (unknown < 2 && g.day <= 2) return undefined;
+  if (Math.random() > 0.5) return undefined; // sometimes she helps, sometimes she teases
+  const pick = suggestCommands(g, ((f.lang as string) || "en") as Lang)[0];
+  const head = pick.split(" ")[0];
+  if (!["scan", "missions", "news", "stats", "net", "market"].includes(head)) return undefined;
+  f.lastAutoRun = now;
+  return pick;
 }
 
 /** Quick connectivity ping (not counted in the 4-thread generation pool). */

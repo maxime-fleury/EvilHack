@@ -117,11 +117,11 @@ async function handler(req: Request): Promise<Response> {
     const body = await readJson(req);
     const message = String(body.message ?? "");
     const g = loadGame(db);
-    const reply = await chatReply(g, message);
+    const res = await chatReply(g, message);
     // chatReply pushes the exchange into g.flags.aiHistory — persist it so
     // Noro-chan actually remembers conversations across sessions.
     saveAfter(g);
-    return Response.json({ reply });
+    return Response.json({ reply: res.reply, suggestions: res.suggestions || [], autoRun: res.autoRun });
   }
 
   if (url.pathname === "/api/complete" && req.method === "POST") {

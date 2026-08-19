@@ -282,6 +282,22 @@ mark { background: var(--term-warn); color: #000; border-radius: 2px; padding: 0
 .chat-input { font-family: var(--font-mono); font-size: .8rem; background: #0d140e; color: var(--term-fg); border-color: #1c2a1e; }
 .chat-typing { color: var(--term-dim); font-size: .75rem; padding: 4px 10px; }
 .chat-typing::after { content: "…"; animation: dots 1.2s steps(1) infinite; }
+
+/* Noro-chan's suggested commands — click to fill the terminal */
+.cmd-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.cmd-chip {
+  font-family: var(--term-font, monospace);
+  font-size: .72rem;
+  color: var(--term-ok);
+  background: color-mix(in srgb, var(--term-ok, #22c55e) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--term-ok, #22c55e) 45%, transparent);
+  border-radius: 10px;
+  padding: 2px 9px;
+  cursor: pointer;
+  transition: background .15s, transform .05s;
+}
+.cmd-chip:hover { background: color-mix(in srgb, var(--term-ok, #22c55e) 26%, transparent); }
+.cmd-chip:active { transform: translateY(1px); }
 @keyframes dots { 0% { content: ""; } 33% { content: "."; } 66% { content: ".."; } 100% { content: "..."; } }
 .chat-badge { font-size: .6rem; }
 
