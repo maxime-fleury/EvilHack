@@ -12,7 +12,7 @@ Play it entirely in the terminal: scan networks, pick your hack vector, break in
 
 - **A real OS shell** — lock screen with login panel (pick your handle, no password — Frank doesn't believe in them), boot animation, desktop icons, taskbar, windows, screensaver.
 - **Interactive hacking** — recon a target, pick a vector (`brute` / `exploit` / `social`), handle live events mid-hack (firewall trips, nosy admins, honeypots), with real risk: failures spike heat and lock the target for a few hours.
-- **79 missions** with branching stories, twists and betrayals ("MAIS NON!"), plus 3 optional side arcs with permanent stat perks.
+- **85 missions** with branching stories, twists and betrayals ("MAIS NON!"), plus 3 optional side arcs with permanent stat perks.
 - **Progression systems** — XP & levels (perks per level), skill tracks (SQL / social / zero-day), reputation & titles (from *Retired DevOps* to *CEO of Unemployment*), 35 achievements (some hidden), career records.
 - **Factions** — NullSec, the Syndicate, or going solo — each with exclusive missions, perks and reputation.
 - **Economy** — shop upgrades (CPU/GPU/RAM/VPN/VPS/botnet), a fake darknet with programs (rootkits, sniffers, proxy chains…) and scams, PUPPYCOIN mining, passive income, a **fluctuating market** (program prices and hot dossiers re-roll daily).
