@@ -178,14 +178,28 @@ body.wall-custom #wallpaper {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .noro-body {
-  width: 62px;
-  height: 62px;
+  width: 78px;
+  height: 78px;
   position: relative;
   animation: noroFloat 3.2s ease-in-out infinite;
 }
 @keyframes noroFloat {
   0%, 100% { transform: translateY(0) rotate(-1deg); }
   50% { transform: translateY(-7px) rotate(1.5deg); }
+}
+/* Real image (hiwaifu) layered over the CSS chibi fallback */
+.noro-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 28%;
+  border-radius: 50%;
+  border: 2px solid #7c3aed;
+  box-shadow: 0 0 18px rgba(232, 168, 204, .35);
+  z-index: 2;
+  background: #12081c;
 }
 .noro-head {
   position: absolute;
@@ -230,7 +244,8 @@ body.wall-custom #wallpaper {
 }
 .noro-hair.left { left: 2px; top: -6px; transform: rotate(-14deg); }
 .noro-hair.right { right: 2px; top: -6px; transform: rotate(14deg); }
-.noro-body:hover .noro-head {
+.noro-body:hover .noro-head,
+.noro-body:hover .noro-img {
   box-shadow: 0 0 26px rgba(232, 168, 204, .6);
 }
 
