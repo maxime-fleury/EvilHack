@@ -29,7 +29,7 @@ export const helpCmd: Command = {
       { label: t(lang, "help.hacking"), names: ["scan", "hack", "missions", "tor", "raid"] },
       { label: t(lang, "help.economy"), names: ["shop", "buy", "inv", "miner", "coin", "sell", "career", "market"] },
       { label: t(lang, "help.intel"), names: ["people", "news", "search", "net", "backdoor", "ls"] },
-      { label: t(lang, "help.story"), names: ["arcs", "choose", "flex", "blackmail", "rivals", "crew"] },
+      { label: t(lang, "help.story"), names: ["arcs", "mira", "choose", "flex", "blackmail", "rivals", "crew"] },
       { label: t(lang, "help.system"), names: ["settings", "save", "slots", "slot", "poweroff", "reboot", "screensaver", "reset", "whoami", "frank", "legend", "prestige"] },
     ];
     for (const gr of groups) {

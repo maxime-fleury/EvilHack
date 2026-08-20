@@ -4,12 +4,15 @@ import { sChat } from "./sound.js";
 const logEl = document.getElementById("chat-log");
 const inputEl = document.getElementById("chat-input");
 const sendBtn = document.getElementById("chat-send");
+const personasEl = document.getElementById("chat-personas");
 const badge = document.querySelector(".chat-badge");
 
+let state = null;
 let aiName = "Noro-chan";
+let currentPersona = "noro";
 let unread = 0;
 let lastTab = "stats";
-let greeted = false;
+const greeted = new Set(); // personas greeted this session
 
 function setAiName(name) {
   if (name) aiName = name;
@@ -26,10 +29,15 @@ export function setChipTitle(fn) {
   chipTitle = fn || ((x) => x);
 }
 
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
 export function addMsg(who, text, quiet = false, opts = {}) {
   const div = document.createElement("div");
   div.className = `msg ${who === "user" ? "user" : "ai"}`;
-  div.innerHTML = `<span class="who">${who === "user" ? esc(youLabel) : esc(aiName)}</span>${esc(text)}`;
+  const speaker = who === "user" ? youLabel : personaName(currentPersona);
+  div.innerHTML = `<span class="who">${esc(speaker)}</span>${esc(text)}`;
   const chips = opts.suggestions || [];
   if (chips.length) {
     const row = document.createElement("div");
@@ -60,8 +68,11 @@ export function addMsg(who, text, quiet = false, opts = {}) {
   return div;
 }
 
-function esc(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function personaName(id) {
+  if (!id || id === "noro") return aiName;
+  const list = personaList();
+  const p = list.find((x) => x.id === id);
+  return p ? p.name : id;
 }
 
 let typingEl = null;
@@ -69,7 +80,7 @@ function showTyping() {
   if (!typingEl) {
     typingEl = document.createElement("div");
     typingEl.className = "chat-typing";
-    typingEl.textContent = `${aiName} is typing…`;
+    typingEl.textContent = `${personaName(currentPersona)} is typing…`;
     logEl.appendChild(typingEl);
   }
   scroll();
@@ -89,6 +100,69 @@ function isChatTabActive() {
   return lastTab === "chat";
 }
 
+// ── Persona picker ─────────────────────────────────────────────────────────
+// Noro-chan + every contact whose dossier you've started + Mira once the
+// romance arc is discovered. Each persona has its own LLM system prompt and
+// its own persistent history.
+
+function personaList() {
+  const list = [{ id: "noro", name: state?.flags?.ainame || "Noro-chan" }];
+  if (state?.contacts?.length) {
+    for (const c of state.contacts) {
+      list.push({ id: c.id, name: c.name });
+    }
+  }
+  if ((state?.arcs || []).some((a) => a.id === "mira")) {
+    if (!list.some((x) => x.id === "mira")) list.push({ id: "mira", name: "Mira" });
+  }
+  return list;
+}
+
+function historyFor(id) {
+  if (!id || id === "noro") return state?.flags?.aiHistory || [];
+  return state?.flags?.contactHistory?.[id] || [];
+}
+
+function renderPersonas() {
+  if (!personasEl) return;
+  const list = personaList();
+  personasEl.innerHTML = list
+    .map((p) => `<button type="button" class="chat-persona ${p.id === currentPersona ? "active" : ""}" data-persona="${esc(p.id)}">${esc(p.name)}</button>`)
+    .join("");
+  personasEl.querySelectorAll(".chat-persona").forEach((b) => {
+    b.addEventListener("click", () => switchPersona(b.dataset.persona));
+  });
+}
+
+function switchPersona(id) {
+  if (id === currentPersona) return;
+  currentPersona = id;
+  renderPersonas();
+  logEl.innerHTML = "";
+  const h = historyFor(id);
+  for (const m of h) addMsg(m.role === "user" ? "user" : "ai", m.content || "", true);
+  if (!h.length) greeting(id);
+  inputEl.placeholder = `${state?.flags?.lang === "fr" ? "écris à" : "message"} ${personaName(id)}…`;
+}
+
+function greeting(id) {
+  if (greeted.has(id)) return;
+  greeted.add(id);
+  const fr = state?.flags?.lang === "fr";
+  if (id === "noro") return; // Noro-chan greets via setupChat below
+  const p = personaList().find((x) => x.id === id);
+  if (!p) return;
+  if (id === "mira") {
+    addMsg("ai", fr
+      ? "Hé. C'est Mira, du 3B. Ton routeur clignote plus que les miens. C'est un compliment. (T'es dev, non ? Tu repars de zéro aussi, hein ?)"
+      : "Hey. It's Mira, from 3B. Your router blinks more than mine. That's a compliment. (You're a dev, right? Starting over too, huh?)", true);
+    return;
+  }
+  addMsg("ai", fr
+    ? `Hé. C'est ${p.name}. Donc… tu as fouillé mes affaires. Charmant. Qu'est-ce que tu me veux, exactement ?`
+    : `Hey. It's ${p.name}. So… you went through my stuff. Charming. What exactly do you want from me?`, true);
+}
+
 async function send(text) {
   const msg = text.trim();
   if (!msg) return;
@@ -96,12 +170,12 @@ async function send(text) {
   inputEl.value = "";
   showTyping();
   try {
-    const data = await chatSend(msg);
+    const data = await chatSend(msg, currentPersona);
     hideTyping();
     const reply = data.reply || data.fallback || "…";
     addMsg("ai", reply, false, { suggestions: data.suggestions || [] });
-    // Noro-chan occasionally runs a safe command herself
-    if (data.autoRun) window.dispatchEvent(new CustomEvent("cmd-run", { detail: data.autoRun }));
+    // Noro-chan occasionally runs a safe command herself (only for Noro-chan)
+    if (data.autoRun && currentPersona === "noro") window.dispatchEvent(new CustomEvent("cmd-run", { detail: data.autoRun }));
   } catch {
     hideTyping();
     addMsg("ai", "Hmm? My connection to the AI got cut… try again~");
@@ -115,28 +189,30 @@ export function initChat() {
   });
 }
 
-export function setupChat(state) {
-  const name = state.flags?.ainame || "Noro-chan";
+export function setupChat(s) {
+  state = s;
+  const name = s.flags?.ainame || "Noro-chan";
   setAiName(name);
-  const fr = state.flags?.lang === "fr";
+  const fr = s.flags?.lang === "fr";
   youLabel = fr ? "vous" : "you";
-  // restore the conversation history so the panel matches what Noro-chan
-  // actually remembers (the server persists it across sessions)
-  const history = state.flags?.aiHistory || [];
-  if (history.length && !logEl.children.length) {
-    for (const h of history) {
-      const role = h.role === "user" ? "user" : "ai";
-      addMsg(role, h.content || "", true);
-    }
+  renderPersonas();
+  // restore the current persona's conversation history so the panel matches
+  // what the persona actually remembers (the server persists it)
+  const h = historyFor(currentPersona);
+  if (h.length && !logEl.children.length) {
+    for (const m of h) addMsg(m.role === "user" ? "user" : "ai", m.content || "", true);
   }
-  if (!greeted) {
-    greeted = true;
-    if (!history.length) {
-      const pname = state.name || "Dave";
+  if (!greeted.has(currentPersona)) {
+    greeted.add(currentPersona);
+    if (currentPersona === "noro") {
+      const pname = s.name || "Dave";
       const greet = fr
         ? `Yo~ Je suis ${name}. T'es ${pname}, non ? Le type viré pour les snacks ? Hé. Écris quelque chose. Je vais pas être sympa.`
         : `Yo~ I'm ${name}. You're ${pname}, right? The guy who got fired over snacks? Heh. Type something. I'm not gonna be nice about it.`;
-      addMsg("ai", greet, true);
+      if (!h.length) addMsg("ai", greet, true);
+    } else if (!h.length) {
+      greeting(currentPersona);
     }
   }
+  inputEl.placeholder = `${fr ? "écris à" : "message"} ${personaName(currentPersona)}…`;
 }

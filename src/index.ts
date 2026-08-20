@@ -86,8 +86,8 @@ async function handler(req: Request): Promise<Response> {
     const body = await readJson(req);
     const g = loadGame(db);
     const obj = (body.settings ?? {}) as Record<string, unknown>;
-    const KEYS = new Set(["theme", "fontsize", "anim", "sound", "lang", "ainame", "aiurl", "aimodel", "aiprompt", "sndvol", "ambient", "wallpaper", "wallpaperUrl"]);
-    const BOOL_KEYS = new Set(["anim", "sound", "ambient"]);
+    const KEYS = new Set(["theme", "fontsize", "anim", "sound", "chips", "lang", "ainame", "aiurl", "aimodel", "aiprompt", "sndvol", "ambient", "wallpaper", "wallpaperUrl"]);
+    const BOOL_KEYS = new Set(["anim", "sound", "chips", "ambient"]);
     const WALLS = ["matrix", "circuit", "deepnet", "nightcity", "gold", "custom"];
     for (const [k, v] of Object.entries(obj)) {
       if (!KEYS.has(k)) continue;
@@ -116,12 +116,13 @@ async function handler(req: Request): Promise<Response> {
   if (url.pathname === "/api/chat" && req.method === "POST") {
     const body = await readJson(req);
     const message = String(body.message ?? "");
+    const persona = String(body.persona ?? "noro").toLowerCase();
     const g = loadGame(db);
-    const res = await chatReply(g, message);
-    // chatReply pushes the exchange into g.flags.aiHistory — persist it so
-    // Noro-chan actually remembers conversations across sessions.
+    const res = await chatReply(g, message, persona);
+    // chatReply pushes the exchange into the persona's history — persist it so
+    // Noro-chan (and the contacts) actually remember across sessions.
     saveAfter(g);
-    return Response.json({ reply: res.reply, suggestions: res.suggestions || [], autoRun: res.autoRun });
+    return Response.json({ reply: res.reply, suggestions: res.suggestions || [], autoRun: res.autoRun, name: res.name });
   }
 
   if (url.pathname === "/api/complete" && req.method === "POST") {

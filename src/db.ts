@@ -133,6 +133,11 @@ function migrate(d: Database) {
   } catch {
     /* column already exists */
   }
+  try {
+    d.exec("ALTER TABLE news ADD COLUMN tag TEXT NOT NULL DEFAULT ''");
+  } catch {
+    /* column already exists */
+  }
 }
 
 /** Close the current DB and open another slot's file. Returns its slot number. */

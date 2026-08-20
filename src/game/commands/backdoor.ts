@@ -1,6 +1,6 @@
 import type { Command } from "./types";
 import { blank, dim, divider, err, info, ok, warn } from "../output";
-import { backdoorsOf, findTarget, hasBackdoor, hasProgram, langOf } from "../engine";
+import { backdoorsOf, findTarget, fuzzyTarget, hasBackdoor, hasProgram, langOf } from "../engine";
 import { t } from "../i18n";
 
 /** Leave (or list) persistent access on hacked hosts. */
@@ -28,16 +28,23 @@ export const backdoorCmd: Command = {
       return { lines, minutes: 1 };
     }
     const name = args.join(" ");
-    const tgt = findTarget(g, name);
-    if (!tgt) return { lines: [err(t(lang, "scan.noTarget", { name }))], minutes: 0 };
+    let tgt = findTarget(g, name);
+    let noroFix: { bad: string; good: string } | undefined;
+    if (!tgt) {
+      const fz = fuzzyTarget(g, name);
+      if (!fz) return { lines: [err(t(lang, "scan.noTarget", { name }))], minutes: 0 };
+      tgt = fz;
+      noroFix = { bad: name, good: fz.name };
+    }
     if (!hasProgram(g, "rootkit")) return { lines: [err(t(lang, "backdoor.needRootkit"))], minutes: 0 };
-    if (hasBackdoor(g, name)) return { lines: [err(t(lang, "backdoor.already", { target: name }))], minutes: 0 };
+    if (hasBackdoor(g, tgt.name)) return { lines: [err(t(lang, "backdoor.already", { target: tgt.name }))], minutes: 0 };
     const hacked = (g.flags.hackedTargets as string[]) || [];
-    if (!hacked.includes(name)) return { lines: [err(t(lang, "backdoor.needHack", { target: name }))], minutes: 0 };
+    if (!hacked.includes(tgt.name)) return { lines: [err(t(lang, "backdoor.needHack", { target: tgt.name }))], minutes: 0 };
+    if (noroFix) lines.push(ok(t(lang, "hack.noroFix", { bad: noroFix.bad, good: noroFix.good })));
     const bd = backdoorsOf(g);
-    bd.push({ target: name, day: g.day });
+    bd.push({ target: tgt.name, day: g.day });
     g.flags.backdoors = bd;
-    lines.push(ok(t(lang, "backdoor.planted", { target: name })));
+    lines.push(ok(t(lang, "backdoor.planted", { target: tgt.name })));
     lines.push(dim(t(lang, "backdoor.effect")));
     return { lines, minutes: 15 };
   },

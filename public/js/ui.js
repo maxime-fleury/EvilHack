@@ -21,8 +21,9 @@ const L = (lang) => ({
     noInv: "Frank est un stock. Frank est triste.", noSoft: "aucun logiciel",
     trophiesMax: "Tous les perks de trophées débloqués — légende accomplie.",
     shopHint: "Améliore avec <b>buy</b> dans le terminal, ou visite le faux Tor pour des programmes : <b>tor</b>.",
+    shopAll: "Tout", shopHard: "Matos", shopNet: "Réseau", shopSoft: "Logiciels", shopStyle: "Style",
     commands: "COMMANDES", helpTip: "Clique sur une commande pour la remplir dans le terminal. Tape <b>help &lt;cmd&gt;</b> pour les détails. Tab complète automatiquement.",
-    sTheme: "Thème", sFont: "Taille de police", sAnim: "Animations", sSound: "Sons", sVolume: "Volume", sAmbient: "Bruit ambiant", sLang: "Langue", sWall: "Fond d'écran", wallUpload: "ou importe une image locale", saved: "✓ réglages enregistrés",
+    sTheme: "Thème", sFont: "Taille de police", sAnim: "Animations", sSound: "Sons", sChips: "Mode facile", sChipsHint: "Chips de commandes sous le terminal — un clic exécute la commande. Désactive pour une partie puriste.", sVolume: "Volume", sAmbient: "Bruit ambiant", sLang: "Langue", sWall: "Fond d'écran", wallUpload: "ou importe une image locale", saved: "✓ réglages enregistrés",
     wallReqRep: "Rép. {n} requis", wallReqHat: "Alignement Black Hat requis", wallReqDrip: "Drip rang 4+ ou Gold-Plated Frank requis", wallReqPrestige: "Prestige {n}+ requis", wallBig: "Image trop lourde (max 1,5 Mo) — le disque de Frank est déjà assez lent.",
     hat: "Alignement (0 white · 50 gray · 100 black)",
     aiName: "Nom de l'assistante IA", aiPrompt: "Prompt de l'assistante IA (éditable)", server: "Serveur (LM Studio)", urlPort: "URL + port — ex. http://127.0.0.1:3007",
@@ -47,8 +48,9 @@ const L = (lang) => ({
     noInv: "Frank is stock. Frank is sad.", noSoft: "no software",
     trophiesMax: "All trophy perks unlocked — legend achieved.",
     shopHint: "Upgrade with <b>buy</b> in the terminal, or visit the fake Tor for programs: <b>tor</b>.",
+    shopAll: "All", shopHard: "Hardware", shopNet: "Network", shopSoft: "Software", shopStyle: "Style",
     commands: "COMMANDS", helpTip: "Click a command to fill the terminal. Type <b>help &lt;cmd&gt;</b> for details. Tab autocompletes.",
-    sTheme: "theme", sFont: "font size", sAnim: "animations", sSound: "sound", sVolume: "volume", sAmbient: "ambient hum", sLang: "language", sWall: "wallpaper", wallUpload: "or import a local image", saved: "✓ settings saved",
+    sTheme: "theme", sFont: "font size", sAnim: "animations", sSound: "sound", sChips: "easy mode", sChipsHint: "Command chips under the terminal — one click runs the command. Turn off for a purist run.", sVolume: "volume", sAmbient: "ambient hum", sLang: "language", sWall: "wallpaper", wallUpload: "or import a local image", saved: "✓ settings saved",
     wallReqRep: "rep {n} required", wallReqHat: "Black Hat alignment required", wallReqDrip: "style rank 4+ or Gold-Plated Frank required", wallReqPrestige: "prestige {n}+ required", wallBig: "Image too heavy (max 1.5MB) — Frank's disk is slow enough already.",
     hat: "Alignment (0 white · 50 gray · 100 black)",
     aiName: "AI assistant name", aiPrompt: "AI assistant prompt (editable)", server: "server (LM Studio)", urlPort: "URL + port — e.g. http://127.0.0.1:3007",
@@ -270,6 +272,17 @@ export function renderMissions(state, actions) {
 }
 
 let shopFetchId = 0;
+// shop tabs: 'all' shows every category stacked (with sub-headings)
+let shopTab = "all";
+
+// which slots belong to which shop tab
+const SHOP_TABS = [
+  { id: "all", slots: ["cpu", "gpu", "ram", "vpn", "vps", "botnet", "exploit", "misc"] },
+  { id: "hard", slots: ["cpu", "gpu", "ram"] },
+  { id: "net", slots: ["vpn", "vps", "botnet"] },
+  { id: "soft", slots: ["exploit"] },
+  { id: "style", slots: ["misc"] },
+];
 
 export async function renderShop(state, actions) {
   const el = document.getElementById("panel-shop");
@@ -283,6 +296,7 @@ export async function renderShop(state, actions) {
   if (id !== shopFetchId) return; // stale — a newer fetch is in flight
   const items = data.shop || [];
   const lang = state.flags?.lang || "en";
+  const L_ = L(lang);
   const groupLabel = (slot) =>
     ({
       cpu: lang === "fr" ? "CPU (vitesse de hack)" : "CPU (hack speed)",
@@ -294,30 +308,50 @@ export async function renderShop(state, actions) {
       exploit: lang === "fr" ? "Logiciels" : "Software",
       misc: lang === "fr" ? "Style de vie" : "Lifestyle",
     })[slot];
+  const tabLabel = (id) =>
+    ({
+      all: L_.shopAll,
+      hard: L_.shopHard,
+      net: L_.shopNet,
+      soft: L_.shopSoft,
+      style: L_.shopStyle,
+    })[id];
+  const tab = SHOP_TABS.find((t) => t.id === shopTab) || SHOP_TABS[0];
+  // only render tabs that actually have items
+  const activeTabs = SHOP_TABS.filter((t) => t.slots.some((s) => items.some((i) => i.slot === s)));
+  // items in this tab, grouped by slot in the canonical order
   const order = ["cpu", "gpu", "ram", "vpn", "vps", "botnet", "exploit", "misc"];
-  let html = "";
-  for (const slot of order) {
-    const group = items.filter((i) => i.slot === slot);
-    if (!group.length) continue;
-    html += `<h6>${esc(groupLabel(slot))}</h6>`;
-    html += group
-      .map((i) => {
-        const btn = i.owned
-          ? `<div class="k mt-1" style="color:#22c55e">✓ owned</div>`
-          : !i.repOk
-            ? `<button class="btn-term mt-2" disabled style="opacity:.45" title="rep ${i.requiresRep} required">rep ${i.requiresRep} ➤</button>`
-            : `<button class="btn-term mt-2" data-cmd="buy ${i.id}" ${i.canAfford ? "" : "disabled"} style="${i.canAfford ? "" : "opacity:.45"}">${i.canAfford ? "buy ➤" : "need " + money(i.price)}</button>`;
-        return card(
-          `<div class="v">${esc(i.name)} <span class="k" style="color:#fbbf24">${money(i.price)}</span></div>` +
-            `<div class="v mt-1" style="font-size:.7rem;color:var(--term-dim)">${esc(i.desc)}</div>` +
-            (i.effect ? `<div class="v mt-1" style="font-size:.7rem;color:#22c55e">→ ${esc(i.effect)}</div>` : "") +
-            btn
-        );
-      })
-      .join("");
-  }
+  const grouped = order
+    .map((slot) => ({ slot, group: items.filter((i) => i.slot === slot && tab.slots.includes(slot)) }))
+    .filter((g) => g.group.length);
+  const itemCard = (i) => {
+    const btn = i.owned
+      ? `<div class="k mt-1" style="color:#22c55e">✓ owned</div>`
+      : !i.repOk
+        ? `<button class="btn-term mt-2" disabled style="opacity:.45" title="rep ${i.requiresRep} required">rep ${i.requiresRep} ➤</button>`
+        : `<button class="btn-term mt-2" data-cmd="buy ${i.id}" ${i.canAfford ? "" : "disabled"} style="${i.canAfford ? "" : "opacity:.45"}">${i.canAfford ? "buy ➤" : "need " + money(i.price)}</button>`;
+    return card(
+      `<div class="v">${esc(i.name)} <span class="k" style="color:#fbbf24">${money(i.price)}</span></div>` +
+        `<div class="v mt-1" style="font-size:.7rem;color:var(--term-dim)">${esc(i.desc)}</div>` +
+        (i.effect ? `<div class="v mt-1" style="font-size:.7rem;color:#22c55e">→ ${esc(i.effect)}</div>` : "") +
+        btn
+    );
+  };
+  let html =
+    `<div class="shop-tabs">${activeTabs
+      .map((t) => `<button type="button" class="shop-tab ${t.id === shopTab ? "active" : ""}" data-tab="${t.id}">${esc(tabLabel(t.id))}</button>`)
+      .join("")}</div>`;
+  html += grouped
+    .map((g) => (tab.id === "all" ? `<h6>${esc(groupLabel(g.slot))}</h6>` : "") + g.group.map(itemCard).join(""))
+    .join("");
   el.innerHTML = html;
   bindButtons(el, actions);
+  el.querySelectorAll(".shop-tab").forEach((b) =>
+    b.addEventListener("click", () => {
+      shopTab = b.dataset.tab;
+      renderShop(state, actions); // re-render in the same language
+    })
+  );
 }
 
 export function renderInv(state) {
@@ -336,13 +370,39 @@ export function renderInv(state) {
 export function renderPeople(state, actions) {
   const el = document.getElementById("panel-people");
   const L_ = L(state.flags?.lang);
+  const mira = (state.arcs || []).find((a) => a.id === "mira");
+  let html = "";
+  // ── Mira — the romance card ──────────────────────────────────────────────
+  if (mira) {
+    const done = mira.status === "done";
+    const step = done ? 4 : Math.min(3, mira.step);
+    const statusTxt = done
+      ? (state.flags?.lang === "fr" ? "💗 en couple — les routeurs clignotent à l'unisson" : "💗 dating — the routers blink in sync")
+      : (state.flags?.lang === "fr" ? "💜 en train de se découvrir…" : "💜 getting to know each other…");
+    let btns = "";
+    if (!done) {
+      if (step === 0) btns = `<button class="btn-term mt-2" data-cmd="mira reply">reply ➤</button>`;
+      else if (step === 1) btns = `<div class="k mt-1" style="color:var(--term-dim)">${state.flags?.lang === "fr" ? "hacke The Office Coffee Machine" : "hack The Office Coffee Machine"}</div>`;
+      else if (step === 2) btns = `<button class="btn-term mt-2" data-cmd="mira gift">gift ➤ ($150)</button>`;
+      else
+        btns =
+          `<button class="btn-term mt-2" data-cmd="mira date flirt">flirt ➤</button>` +
+          `<button class="btn-term mt-2" data-cmd="mira date shy">shy ➤</button>` +
+          `<button class="btn-term mt-2" data-cmd="mira date bro">bro ➤</button>`;
+    }
+    html += card(
+      `<div class="v" style="color:#e879f9">💗 Mira <span class="k">· 3B · ${state.flags?.lang === "fr" ? "hacker du dessus" : "the hacker upstairs"}</span></div>` +
+        `<div class="v mt-1" style="font-size:.72rem;color:var(--term-dim)">${statusTxt}</div>` +
+        btns
+    );
+  }
+  // ── dossiers (blackmail targets) ─────────────────────────────────────────
   if (!state.contacts.length) {
-    el.innerHTML = `<div class="panel-card"><div class="v" style="color:var(--term-dim)">${L_.noPeople}</div></div>`;
+    el.innerHTML = html + `<div class="panel-card"><div class="v" style="color:var(--term-dim)">${L_.noPeople}</div></div>`;
+    bindButtons(el, actions);
     return;
   }
-  el.innerHTML =
-    `<h6>${L_.dossiers}</h6>` +
-    state.contacts
+  html += `<h6>${L_.dossiers}</h6>` + state.contacts
       .map((c) => {
         const frag = "●".repeat(c.fragments) + "○".repeat(Math.max(0, 3 - c.fragments));
         const btn =
@@ -354,6 +414,7 @@ export function renderPeople(state, actions) {
         return card(`<div class="v">${esc(c.name)} <span class="k">· ${esc(c.role)}</span></div><div class="v" style="font-size:.75rem">${frag}</div>${btn}`);
       })
       .join("");
+  el.innerHTML = html;
   bindButtons(el, actions);
 }
 
@@ -406,6 +467,7 @@ export function renderSettings(state, actions) {
     fontsize: el.querySelector("#set-font").value,
     anim: el.querySelector("#set-anim").value,
     sound: el.querySelector("#set-sound").value,
+    chips: el.querySelector("#set-chips").value,
     sndvol: (() => { const v = Number(el.querySelector("#set-vol").value); return Number.isFinite(v) ? v / 100 : 0.5; })(),
     ambient: el.querySelector("#set-amb").value === "on",
     lang: el.querySelector("#set-lang").value,
@@ -432,6 +494,9 @@ export function renderSettings(state, actions) {
     `<div class="setting-row"><label for="set-sound">${L_.sSound}</label><select id="set-sound" class="form-select form-select-sm" style="width:auto">${["on", "off"]
       .map((t) => `<option value="${t}" ${onOff(s.sound) === t ? "selected" : ""}>${t}</option>`)
       .join("")}</select></div>` +
+    `<div class="setting-row"><label for="set-chips">${L_.sChips}</label><select id="set-chips" class="form-select form-select-sm" style="width:auto">${["on", "off"]
+      .map((t) => `<option value="${t}" ${onOff(s.chips !== false) === t ? "selected" : ""}>${t}</option>`)
+      .join("")}</select><div class="v" style="font-size:.68rem;color:var(--term-dim)">${L_.sChipsHint}</div></div>` +
     `<div class="setting-row"><label for="set-vol">${L_.sVolume}</label><input id="set-vol" type="range" min="0" max="100" value="${(() => { const v = Number(state.flags?.sndvol); return Number.isFinite(v) ? Math.round(v * 100) : 50; })()}" class="form-range" style="width:120px" /></div>` +
     `<div class="setting-row"><label for="set-amb">${L_.sAmbient}</label><select id="set-amb" class="form-select form-select-sm" style="width:auto">${["off", "on"]
       .map((t) => `<option value="${t}" ${onOff(state.flags.ambient) === t ? "selected" : ""}>${t}</option>`)

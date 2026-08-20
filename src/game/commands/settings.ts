@@ -15,6 +15,7 @@ const KEYS: Record<string, SettingSpec> = {
   fontsize: { values: ["sm", "md", "lg"], label: { en: "Terminal font size", fr: "Taille de police du terminal" } },
   anim: { values: ["on", "off"], label: { en: "Typing/fade animation", fr: "Animation de frappe/transition" } },
   sound: { values: ["on", "off"], label: { en: "Terminal beeps", fr: "Bips du terminal" } },
+  chips: { values: ["on", "off"], label: { en: "Easy mode (command chips under the terminal)", fr: "Mode facile (chips de commandes sous le terminal)" } },
   lang: { values: ["en", "fr"], label: { en: "Language", fr: "Langue" } },
   wallpaper: { values: ["matrix", "circuit", "deepnet", "nightcity", "gold", "custom"], label: { en: "Desktop wallpaper", fr: "Fond d'écran" } },
   wallpaperUrl: { free: true, label: { en: "Custom wallpaper URL", fr: "URL du fond d'écran custom" } },
@@ -35,7 +36,7 @@ export const settingsCmd: Command = {
   aliases: ["config"],
   usage: "settings [set <key> <value> | set-all <json> | ai]",
   help: "View or change game settings.",
-  detail: "Keys: theme, fontsize, anim, sound, lang (en|fr), wallpaper (matrix|circuit|deepnet|nightcity|gold|custom), ainame, aiurl, aiprompt. `settings ai` shows the AI sidekick's editable persona prompt.",
+  detail: "Keys: theme, fontsize, anim, sound, chips (on|off = easy mode), lang (en|fr), wallpaper (matrix|circuit|deepnet|nightcity|gold|custom), ainame, aiurl, aiprompt. `settings ai` shows the AI sidekick's editable persona prompt.",
   run: (g, args) => {
     const lang = langOf(g);
     const lines = [];

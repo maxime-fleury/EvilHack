@@ -196,6 +196,12 @@ export const ACHIEVEMENTS: Achievement[] = [
     check: (g) => !!((g.flags.arcs as Record<string, any>) || {})["merle"]?.done,
   },
   {
+    id: "mira", xp: 150, hidden: true,
+    title: { en: "Router Romance", fr: "Romance de Routeurs" },
+    desc: { en: "Complete Mira's arc. The routers blink in sync.", fr: "Terminer l'arc de Mira. Les routeurs clignotent à l'unisson." },
+    check: (g) => !!((g.flags.arcs as Record<string, any>) || {})["mira"]?.done,
+  },
+  {
     id: "blackmailer", xp: 80,
     title: { en: "Very Convincing", fr: "Très Convaincant" },
     desc: { en: "Shake down someone with a completed dossier.", fr: "Faire chanter quelqu'un avec un dossier complet." },

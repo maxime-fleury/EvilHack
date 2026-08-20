@@ -121,6 +121,7 @@
               <span class="terminal-suggestion" id="terminal-suggestion"></span>
             </div>
           </div>
+          <div class="terminal-chips" id="terminal-chips" aria-label="suggestions"></div>
         </div>
       </div>
 
@@ -170,7 +171,7 @@
       <div class="os-window" data-app="chat" id="win-chat" style="left:8%;top:13%;width:400px;height:520px">
         <div class="win-titlebar"><span class="win-title"><span class="win-ico">💬</span> <span class="win-label">Noro</span></span>
           <span class="win-controls"><button class="win-btn win-min">–</button><button class="win-btn win-close">✕</button></span></div>
-        <div class="chat-panel win-body" id="panel-chat"><div class="chat-log" id="chat-log"></div><div class="chat-input-row"><input id="chat-input" class="form-control form-control-sm chat-input" placeholder="ask Noro-chan…" autocomplete="off" /><button id="chat-send" class="btn btn-sm btn-outline-success ms-1">➤</button></div></div>
+        <div class="chat-panel win-body" id="panel-chat"><div class="chat-personas" id="chat-personas"></div><div class="chat-log" id="chat-log"></div><div class="chat-input-row"><input id="chat-input" class="form-control form-control-sm chat-input" placeholder="ask Noro-chan…" autocomplete="off" /><button id="chat-send" class="btn btn-sm btn-outline-success ms-1">➤</button></div></div>
       </div>
 
       <!-- Help -->
@@ -207,6 +208,19 @@
 
   <!-- Wallpaper unlock toast -->
   <div id="wall-toast" aria-live="polite"></div>
+
+  <!-- Noro-chan mascot: she pops out of the screen, bottom-right -->
+  <div id="noro-mascot" class="hidden" aria-hidden="true">
+    <div class="noro-bubble" id="noro-bubble"></div>
+    <div class="noro-body" id="noro-body" title="Noro-chan">
+      <div class="noro-head">
+        <span class="noro-eye left"></span><span class="noro-eye right"></span>
+        <span class="noro-mouth"></span>
+      </div>
+      <div class="noro-hair left"></div>
+      <div class="noro-hair right"></div>
+    </div>
+  </div>
 
   <script type="module" src="/js/main.js"></script>
 </body>

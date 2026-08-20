@@ -17,7 +17,7 @@ export const getState = () => api("/api/state");
 export const getIntro = () => api("/api/intro");
 export const getHelp = () => api("/api/help");
 export const getShop = () => api("/api/shop");
-export const chatSend = (message) => api("/api/chat", { method: "POST", body: JSON.stringify({ message }) });
+export const chatSend = (message, persona = "noro") => api("/api/chat", { method: "POST", body: JSON.stringify({ message, persona }) });
 // url = the edited value in the settings panel, so the test button probes the
 // endpoint you're about to save — not the one already stored on the server.
 export const aiStatus = (url) => api(`/api/ai-status?url=${encodeURIComponent(url || "")}`);

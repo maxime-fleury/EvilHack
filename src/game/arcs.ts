@@ -12,6 +12,10 @@ export interface ArcState {
   step: number; // steps completed so far
   invest?: number;
   investDay?: number;
+  // mira romance arc
+  replied?: boolean;
+  gifted?: boolean;
+  dateChoice?: "flirt" | "shy" | "bro";
 }
 
 export interface ArcStep {
@@ -180,6 +184,39 @@ export const ARCS: ArcDef[] = [
     perkFlag: "arcMerleDone",
     perkText: { en: "Perk: 'The Blackbird' — the Office owes you. Your double agent keeps your heat low and the intel flowing.", fr: "Perk : « Le Merle » — le Bureau vous doit une fierté. Votre agent double refroidit votre chaleur et fait affluer les infos." },
     trophy: "merle",
+  },
+
+  // ── MIRA ─────────────────────────────────────────────────────────────────
+  // A nerdy girl hacker in the exact same situation: fired from MegaCorp the
+  // same Friday, lives two floors up, hacks for fun. She finds you first.
+  {
+    id: "mira",
+    title: { en: "Mira", fr: "Mira" },
+    hook: { en: "Unknown girl in apartment 3B says she 'saw your router light blink in Morse'", fr: "Une inconnue du 3B dit avoir « vu votre routeur clignoter en morse »" },
+    blurb: { en: "A girl hacker two floors up. Fired the same Friday as you. She hacks for fun, and she noticed you first.", fr: "Une hacker deux étages au-dessus. Virée le même vendredi que vous. Elle pirate pour le fun, et elle vous a remarqué en premier." },
+    discover: (g) => (career(g).missionsDone || 0) >= 1 && g.rep >= 2,
+    intro: [
+      { en: "A window pops up on Frank. It wasn't open. A voice memo: 'hey. you're the snacks guy, right? i was in the meeting. i'm the one who fixed the coffee machine after you left, nobody clapped. anyway — you hack? cool. me too. don't be weird about it. — mira, 3B'", fr: "Une fenêtre s'ouvre sur Frank. Elle n'était pas ouverte. Un message vocal : « hé. t'es le gars des snacks, hein ? j'étais dans la réunion. je suis celle qui a réparé la machine à café après ton départ, personne n'a applaudi. bref — tu pirates ? cool. moi aussi. fais pas ton bizarre. — mira, 3B »" },
+      { en: "Noro-chan: 'ohh~ a GIRL. in your BUILDING. who HACKS. i'm watching this very closely.'", fr: "Noro-chan : « ohh~ une FILLE. dans ton IMMEUBLE. qui PIRATE. je surveille ça de très près. »" },
+      { en: "→ Reply with 'mira reply'. Be normal. (Don't be normal.)", fr: "→ Réponds avec « mira reply ». Sois normal. (Sois pas normal.)" },
+    ],
+    steps: [
+      { desc: { en: "Reply to Mira — mira reply", fr: "Répondre à Mira — mira reply" }, done: (g) => !!arc(g, "mira").replied },
+      { desc: { en: "Hack The Office Coffee Machine — her old office (she 'fixed' it, remember?)", fr: "Pirater The Office Coffee Machine — son ancien bureau (elle l'a « réparée », tu te souviens ?)" }, done: (g) => hacked(g, "The Office Coffee Machine") },
+      { desc: { en: "Bring her a gift — mira gift ($150)", fr: "Lui offrir un cadeau — mira gift (150 $)" }, done: (g) => !!arc(g, "mira").gifted },
+      { desc: { en: "Say the thing — mira date <flirt|shy|bro>", fr: "Dire le truc — mira date <flirt|shy|bro>" }, done: (g) => !!arc(g, "mira").dateChoice },
+    ],
+    finale: [
+      { en: "The noodles place is two blocks away and smells like a war crime. She orders the spicy one. You talk about servers, and the meeting, and how neither of you cried. You both cried.", fr: "Le resto de nouilles est à deux rues et sent le crime de guerre. Elle commande la version épicée. Vous parlez de serveurs, de la réunion, et du fait que ni l'un ni l'autre n'avez pleuré. Vous avez tous les deux pleuré." },
+      { en: "She pays. 'You can get the next one,' she says, 'if you're still alive.' On the way back, your routers blink in sync. It's not Morse. It's better.", fr: "Elle paie. « Tu prendras le prochain, dit-elle, si t'es encore en vie. » Au retour, vos routeurs clignotent à l'unisson. Ce n'est pas du morse. C'est mieux." },
+    ],
+    money: 3000,
+    rep: 5,
+    style: 20,
+    xp: 250,
+    perkFlag: "arcMiraDone",
+    perkText: { en: "Perk: 'Mira's Node' — she scrubs your logs at night: −8% heat, +5% loot. And she's cute.", fr: "Perk : « Nœud de Mira » — elle nettoie vos logs la nuit : −8% de chaleur, +5% de butin. Et elle est mignonne." },
+    trophy: "mira",
   },
 ];
 

@@ -30,6 +30,7 @@ import { prestigeCmd } from "./prestige";
 import { flexCmd } from "./flex";
 import { blackmailCmd } from "./blackmail";
 import { raidCmd } from "./raid";
+import { miraCmd } from "./mira";
 
 const COMMANDS: Command[] = [
   helpCmd,
@@ -78,6 +79,7 @@ const COMMANDS: Command[] = [
   flexCmd,
   blackmailCmd,
   raidCmd,
+  miraCmd,
 ];
 
 export const registry = new Map<string, Command>();
@@ -114,6 +116,9 @@ export function complete(line: string): string[] {
   }
   if (verb === "arcs") {
     return ["invest"].filter((s) => s.startsWith(prefix));
+  }
+  if (verb === "mira") {
+    return ["reply", "gift", "date"].filter((s) => s.startsWith(prefix));
   }
   if (verb === "tor") {
     return ["visit", "install", "bazaar", "forum", "catpics", "nullsec", "socks", "sniffer", "proxychain", "miner2", "wardialer", "rootkit", "ultrasuite"].filter((s) => s.startsWith(prefix));

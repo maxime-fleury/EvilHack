@@ -2,6 +2,7 @@ import type { Line } from "./output";
 import { dim, info, warn } from "./output";
 import type { Game } from "./engine";
 import { hatBand, hatLabel, styleRank, styleTitle } from "./engine";
+import { getNpc } from "./world";
 import { missionTitle } from "./missions";
 import type { Bilingual, Lang } from "./i18n";
 import { pick } from "./i18n";
@@ -116,7 +117,8 @@ async function doCompletion(
   model: string,
   messages: { role: string; content: string }[],
   timeoutMs: number,
-  playerName = ""
+  playerName = "",
+  customSystem = ""
 ): Promise<string> {
   const controller = new AbortController();
   const to = setTimeout(() => controller.abort(), timeoutMs);
@@ -127,7 +129,7 @@ async function doCompletion(
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         model,
-        messages: [{ role: "system", content: systemPrompt(flags, playerName) }, ...messages],
+        messages: [{ role: "system", content: customSystem || systemPrompt(flags, playerName) }, ...messages],
         temperature: 0.9,
         max_tokens: 600,
       }),
@@ -150,18 +152,18 @@ async function doCompletion(
   }
 }
 
-async function askAI(flags: Record<string, unknown>, messages: { role: string; content: string }[], timeoutMs = 30000, playerName = ""): Promise<string> {
+async function askAI(flags: Record<string, unknown>, messages: { role: string; content: string }[], timeoutMs = 30000, playerName = "", customSystem = ""): Promise<string> {
   if (inflight >= MAX_INFLIGHT) return "";
   const base = String(flags.aiurl || "http://127.0.0.1:3007").replace(/\/+$/, "");
   const url = `${base}/v1/chat/completions`;
   inflight++;
   try {
     const model = await pickModel(flags);
-    let text = await doCompletion(flags, url, model, messages, timeoutMs, playerName);
+    let text = await doCompletion(flags, url, model, messages, timeoutMs, playerName, customSystem);
     // The auto-detected model may be slow/empty (e.g. an unloaded one). Retry
     // once with LM Studio's generic name, which routes to the loaded model.
     if (!text && model !== "local-model") {
-      text = await doCompletion(flags, url, "local-model", messages, timeoutMs, playerName);
+      text = await doCompletion(flags, url, "local-model", messages, timeoutMs, playerName, customSystem);
     }
     return text;
   } finally {
@@ -287,16 +289,76 @@ function dailyBriefing(g: Game, lang: Lang): Bilingual | null {
 // aiHistory lives in the game flags, so it survives restarts. We keep the last
 // ~24 exchanges and feed them back as context so Noro-chan "remembers".
 
-function history(g: Game): { role: string; content: string }[] {
-  const h = (g.flags.aiHistory as { role: string; content: string }[]) || [];
-  return Array.isArray(h) ? h : [];
+function historyFor(g: Game, persona: string): { role: string; content: string }[] {
+  if (persona === "noro") {
+    const h = (g.flags.aiHistory as { role: string; content: string }[]) || [];
+    return Array.isArray(h) ? h : [];
+  }
+  const ch = (g.flags.contactHistory as Record<string, { role: string; content: string }[]>) || {};
+  return Array.isArray(ch[persona]) ? ch[persona] : [];
 }
 
-function pushHistory(g: Game, role: string, content: string) {
-  const h = history(g);
+function pushHistoryFor(g: Game, persona: string, role: string, content: string) {
+  const h = historyFor(g, persona);
   h.push({ role, content });
   if (h.length > 24) h.splice(0, h.length - 24);
-  g.flags.aiHistory = h;
+  if (persona === "noro") {
+    g.flags.aiHistory = h;
+  } else {
+    const ch = (g.flags.contactHistory as Record<string, { role: string; content: string }[]>) || {};
+    ch[persona] = h;
+    g.flags.contactHistory = ch;
+  }
+}
+
+// ── Chatting with contacts (not just Noro-chan) ───────────────────────────
+// The player can talk to any NPC whose dossier they've started (contacts) and
+// to Mira once the romance arc is discovered. Each persona gets its own system
+// prompt + persistent history, so Brenda is not Noro-chan and vice versa.
+
+function npcPersona(g: Game, npcId: string): { name: string; system: string } | null {
+  const npc = getNpc(npcId);
+  if (!npc) return null;
+  const contact = g.contacts.find((c) => c.npc === npcId);
+  if (!contact || !contact.discovered) return null; // you can't DM someone you haven't met
+  const lang = ((g.flags.lang as string) || "en") as Lang;
+  const fr = lang === "fr";
+  const pname = g.name || "Dave";
+  const role = fr ? npc.role.fr : npc.role.en;
+  const secrets = npc.secrets.map((s) => (fr ? s.title.fr : s.title.en)).join("; ");
+  const system = fr
+    ? `Tu es ${npc.name}, ${role}, un personnage fictif dans un jeu de comédie noire sur un hacker. Le joueur (${pname}) est un hacker qui a découvert des secrets sur toi : ${secrets}. Il te parle maintenant — reste dans ton personnage (tu es ${role}, pas une IA, tu ne sais pas que tu es dans un jeu). Réponds COURT (1-2 phrases), avec ta propre personnalité. La langue du joueur est le français — réponds en français. Ne casse jamais le quatrième mur.`
+    : `You are ${npc.name}, ${role}, a fictional character in a dark-comedy hacker game. The player (${pname}) is a hacker who has discovered secrets about you: ${secrets}. They're talking to you now — stay in character (you are ${role}, not an AI, you don't know you're in a game). Reply SHORT (1-2 sentences), with your own personality. The player's language is English — reply in English. Never break the fourth wall.`;
+  return { name: npc.name, system };
+}
+
+function miraPersona(g: Game): { name: string; system: string } | null {
+  const st = (g.flags.arcs as Record<string, any>) || {};
+  const arc = st["mira"];
+  if (!arc?.active && !arc?.done) return null;
+  const lang = ((g.flags.lang as string) || "en") as Lang;
+  const fr = lang === "fr";
+  const pname = g.name || "Dave";
+  const stage = arc.done
+    ? (fr ? "en couple — les nouilles étaient « acceptables »" : "dating — the noodles were 'acceptable'")
+    : arc.dateChoice
+      ? (fr ? "sur le point de sortir ensemble — tu as dit le truc" : "about to date — you said the thing")
+      : arc.gifted
+        ? (fr ? "flirt — le clavier mécanique a fait mouche" : "flirty — the mechanical keyboard hit")
+        : arc.replied
+          ? (fr ? "amis — elle t'a répondu" : "friends — she replied")
+          : (fr ? "inconnus — elle t'a trouvé via ton routeur" : "strangers — she found you through your router");
+  const system = fr
+    ? `Tu es Mira, une développeuse nerd, virée de MegaCorp le même vendredi que le joueur. Tu habites au 3B, deux étages au-dessus de lui, et tu pirates pour le fun. Tu es intelligente, taquine, un peu maladroite en société, mais tu as un faible pour le joueur (${pname}). Votre relation : ${stage}. Tu parles le langage des devs et des hackers — serveurs, machines à café, routeurs qui clignotent. Réponds COURT (1-2 phrases), adorablement, avec des blagues de dev. Réponds en français. Ne casse jamais le quatrième mur.`
+    : `You are Mira, a nerdy developer fired from MegaCorp the same Friday as the player. You live in 3B, two floors above him, and you hack for fun. You're smart, teasing, a bit socially awkward, but you have a soft spot for the player (${pname}). Your relationship: ${stage}. You speak dev/hacker language — servers, coffee machines, blinking routers. Reply SHORT (1-2 sentences), adorably, with dev jokes. Reply in English. Never break the fourth wall.`;
+  return { name: "Mira", system };
+}
+
+/** Resolve a persona to { name, system } (or null → fall back to Noro-chan). */
+function personaFor(g: Game, persona: string): { name: string; system: string } | null {
+  if (!persona || persona === "noro") return null;
+  if (persona === "mira") return miraPersona(g);
+  return npcPersona(g, persona);
 }
 
 // ── Tutorial (scripted guidance, no AI needed) ─────────────────────────────
@@ -450,7 +512,7 @@ export async function maybeNudge(g: Game, out: Line[]): Promise<Nudge | null> {
       fallback = fallback.replace("{hat}", hatLabel(lang, hatBand(g)));
     }
     const final = (text || fallback).replace(/\bDave\b/g, pname);
-    pushHistory(g, "assistant", final);
+    pushHistoryFor(g, "noro", "assistant", final);
     out.push(info(`💬 ${name}: ${final}`));
     return { name, text: final, suggestions: suggestCommands(g, lang) };
   }
@@ -504,23 +566,29 @@ const REACT_CURATED: Record<string, Bilingual> = {
   agi_freed: { en: "Ohh~ you freed the toaster AGI? And it moved into OUR router?? I see how it is, Dave~. I was here first. Frank was here first. The toaster can have the microwave. But if it starts calling you 'master' I'm unplugging everything.", fr: "Ohh~ t'as libéré l'IA grille-pain ? Et elle s'installe dans NOTRE routeur ?? Je vois le tableau, Dave~. J'étais là en premier. Frank était là en premier. Le grille-pain peut avoir le micro-ondes. Mais si elle commence à t'appeler « maître », je débranche tout." },
 };
 
-/** Used by /api/chat — the user talks to the AI in the Chat panel. */
+/** Used by /api/chat — the user talks to the AI (Noro-chan or a contact) in the Chat panel. */
 export async function chatReply(
   g: Game,
-  message: string
-): Promise<{ reply: string; suggestions: string[]; autoRun?: string }> {
+  message: string,
+  persona = "noro"
+): Promise<{ reply: string; suggestions: string[]; autoRun?: string; name: string }> {
   const f = g.flags;
   const lang = ((f.lang as string) || "en") as Lang;
-  const name = (f.ainame as string) || "Noro-chan";
-  pushHistory(g, "user", message);
-  const past = history(g).slice(-16, -1); // everything except the message just added
-  // give Noro-chan live game context so she references real stats
+  const pname = g.name || "Dave";
+  const pc = personaFor(g, persona);
+  const personaName = pc?.name || ((f.ainame as string) || "Noro-chan");
+  const customSystem = pc?.system || "";
+
+  pushHistoryFor(g, persona, "user", message);
+  const past = historyFor(g, persona).slice(-16, -1); // everything except the message just added
+  // give the persona live game context so they reference real stats (Mira
+  // knows your money, Vlad knows you hacked his group — it's all in-game fact)
   const ctx = `${message}\n\n[GAME STATE] ${gameDigest(g, lang)}`;
   const msgs = past.length
     ? [...past, { role: "user" as const, content: ctx }]
     : [{ role: "user" as const, content: ctx }];
   // when the player asks what to do / how to play, the MISSION GUIDE block in
-  // [GAME STATE] has the exact commands — make sure Noro-chan leans on it
+  // [GAME STATE] has the exact commands — make sure the persona leans on it
   const wantsHelp = /comment|quoi faire|je sais pas|que faire|how do i|what do i|stuck|perdu|bloqu/.test(message.toLowerCase());
   if (wantsHelp && missionGuide(g, lang)) {
     const hint = lang === "fr"
@@ -529,12 +597,12 @@ export async function chatReply(
     const last = msgs[msgs.length - 1];
     msgs[msgs.length - 1] = { ...last, content: last.content + hint };
   }
-  const reply = await askAI(f, msgs, 30000, g.name || "Dave");
+  const reply = await askAI(f, msgs, 30000, pname, customSystem);
   const final = reply || (lang === "fr"
-    ? `Hein~? Je n'ai pas entendu (LM Studio est hors ligne). Réessaie quand mon cerveau est branché, ${g.name || "Dave"}.`
-    : `Huh~? Didn't catch that (LM Studio is offline). Try again when my brain is plugged in, ${g.name || "Dave"}.`);
-  pushHistory(g, "assistant", final);
-  return { reply: final, suggestions: suggestCommands(g, lang), autoRun: wantsHelp ? maybeAutoRun(g) : undefined };
+    ? `Hein~? Je n'ai pas entendu (LM Studio est hors ligne). Réessaie quand mon cerveau est branché, ${pname}.`
+    : `Huh~? Didn't catch that (LM Studio is offline). Try again when my brain is plugged in, ${pname}.`);
+  pushHistoryFor(g, persona, "assistant", final);
+  return { reply: final, suggestions: suggestCommands(g, lang), autoRun: wantsHelp ? maybeAutoRun(g) : undefined, name: personaName };
 }
 
 /**

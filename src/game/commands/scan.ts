@@ -1,6 +1,6 @@
 import type { Command } from "./types";
-import { blank, dim, divider, info, warn } from "../output";
-import { buildTargets, findTarget, hackMinutes, langOf } from "../engine";
+import { blank, dim, divider, info, ok, warn } from "../output";
+import { buildTargets, findTarget, fuzzyTarget, hackMinutes, langOf } from "../engine";
 import { t } from "../i18n";
 import { pick } from "../i18n";
 
@@ -20,10 +20,18 @@ export const scanCmd: Command = {
     if (!g.flags.firstScan) g.flags.firstScan = true;
     const targets = buildTargets(g);
     if (args[0]) {
-      const tgt = findTarget(g, args.join(" "));
+      const raw = args.join(" ");
+      let tgt = findTarget(g, raw);
+      let noroFix: { bad: string; good: string } | undefined;
       if (!tgt) {
-        return { lines: [{ t: t(lang, "scan.noTarget", { name: args.join(" ") }), c: "err" }], minutes: 0 };
+        const fz = fuzzyTarget(g, raw);
+        if (!fz) {
+          return { lines: [{ t: t(lang, "scan.noTarget", { name: raw }), c: "err" }], minutes: 0 };
+        }
+        tgt = fz;
+        noroFix = { bad: raw, good: fz.name };
       }
+      if (noroFix) lines.push(ok(t(lang, "hack.noroFix", { bad: noroFix.bad, good: noroFix.good })));
       lines.push(info(`   ${tgt.name}`));
       lines.push(dim(t(lang, "scan.difficulty", { bars: bars(tgt.difficulty) })));
       lines.push(dim(t(lang, "scan.eta", { m: hackMinutes(g, tgt.difficulty, tgt.skill) })));

@@ -4,6 +4,8 @@ import { renderStats, renderMissions, renderInv, renderShop, renderPeople, rende
 import { initChat, addMsg, setupChat, setChatTabState } from "./chat.js";
 import { setupShell, setLocked, playBoot, showLogin, setLoginTexts, setShellLang, setLangPicker, wireLangPicker, openApp } from "./os.js";
 import { wireTutorial, updateTutorial, showTutorial, isTutorialOpen } from "./tutorial.js";
+import { setupChips, renderChips } from "./chips.js";
+import { setupMascot, mascotReact, resetMascot } from "./mascot.js";
 import { setSound, setVolume, sBoot, sPowerOff, sShutdown, sScreensaver, sAchievement, sLevelUp, sAlarm, sWarning, sCoin, sHackStart, sHackDone, sMission, sDanger, sRaid, sBlackmail, sSale, sMining, setAmbient } from "./sound.js";
 
 let state = null;
@@ -179,6 +181,8 @@ function applyState(s) {
   setShellLang(s.flags?.lang === "fr" ? "fr" : "en");
   setLangPicker(s.flags?.lang);
   setLocked(s.identified === false);
+  renderChips(s);
+  mascotReact(s);
   soundEvents(s);
 }
 
@@ -229,6 +233,7 @@ async function runCommand(val) {
     if (state && state.identified === false && data.state?.identified === true && !booted) {
       booted = true;
       sBoot();
+      resetMascot(data.state);
       playBoot(data.state.name, () => { term.focusInput(); });
     }
     // action sounds driven by the response lines (no extra server round-trips)
@@ -291,6 +296,12 @@ async function boot() {
   term.onSubmit(runCommand);
   initChat();
   wireTutorial((c) => runCommand(c));
+  // chips under the terminal: one click fills the input AND runs the command
+  setupChips((c) => {
+    const inp = $("terminal-input");
+    if (inp) inp.value = c;
+    runCommand(c);
+  });
 
   // the player picks their handle in the login panel, which sends the name as
   // the first "command" — the server treats it as identification (no password)
@@ -304,6 +315,8 @@ async function boot() {
     onLockClick: () => showLogin(submitName),
     onOpenApp: (id) => setChatTabState(id),
   });
+  // Noro-chan pops out of the screen, bottom-right; click her to open the chat
+  setupMascot(() => openApp("chat"));
 
   // EN/FR picker on the lock screen + login panel: persists via /api/settings
   // (works before identification), then applyState re-renders everything.

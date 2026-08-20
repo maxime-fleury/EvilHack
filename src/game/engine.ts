@@ -21,6 +21,7 @@ export interface NewsRow {
   minutes: number;
   headline: string;
   body: string;
+  tag: string; // category for Noro-chan's commentary ("hack", "crypto", "cats", …)
 }
 
 export interface JobRow {
@@ -256,6 +257,7 @@ export function heatMult(g: Game): number {
   if (hasProgram(g, "proxychain")) m *= 0.9;
   if (hasProgram(g, "rootkit")) m *= 0.95;
   if (isArcDone(g, "spectre")) m *= 0.85; // arc perk: the Spectre's shade
+  if (isArcDone(g, "mira")) m *= 0.92; // arc perk: Mira scrubs your logs at night
   m *= Math.max(0.7, 1 - levelOf(g) * 0.01); // level perk: quieter ops
   m *= Math.max(0.7, 1 - crewPerks(g).heat); // a whisperer on the team cools traces
   m *= trophyPerks(g).heat; // achievement perk: trophies make you quieter
@@ -783,6 +785,74 @@ export function findTarget(g: Game, name: string): HackTarget | undefined {
   return buildTargets(g).find((t) => t.name.toLowerCase() === n);
 }
 
+/** Normalize a string for fuzzy matching: lowercase, strip accents and non-alphanumeric chars. */
+export function normName(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+/** Levenshtein distance — only used on short normalized names. */
+function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const dp = new Array(b.length + 1);
+  for (let j = 0; j <= b.length; j++) dp[j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = dp[j];
+      dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = tmp;
+    }
+  }
+  return dp[b.length];
+}
+
+/**
+ * Forgiveness matcher: `hack wifi 1` → "Cafe Wi-Fi", `hack cafe wif` → "Cafe Wi-Fi".
+ * Tries normalized substring containment (ignoring stray digits) then a typo pass.
+ * Returns undefined when nothing is close enough — the caller keeps its error flow.
+ */
+export function fuzzyTarget(g: Game, input: string): HackTarget | undefined {
+  const q = normName(input);
+  if (!q) return undefined;
+  const targets = buildTargets(g);
+  // query variants: as-is, digits stripped, trailing digits stripped ("wifi 1" → "wifi")
+  const queries = [...new Set([q, q.replace(/\d/g, ""), q.replace(/\d+$/, "")].filter((x) => x.length > 1))];
+
+  // pass 1: substring containment either way — shortest matched name wins ties
+  let best: { tgt: HackTarget; score: number } | undefined;
+  for (const query of queries) {
+    for (const tgt of targets) {
+      const n = normName(tgt.name);
+      if (!n) continue;
+      let score = -1;
+      if (n === query) score = 0;
+      else if (n.includes(query)) score = n.length - query.length + 0.5;
+      else if (query.includes(n)) score = query.length - n.length + 0.5;
+      if (score >= 0 && (!best || score < best.score)) best = { tgt, score };
+    }
+    if (best && best.score === 0) return best.tgt;
+  }
+  if (best) return best.tgt;
+
+  // pass 2: typo tolerance — Levenshtein ≤ 2 (or 25% of the name, whichever is larger)
+  for (const query of queries) {
+    for (const tgt of targets) {
+      const n = normName(tgt.name);
+      if (!n) continue;
+      const dist = levenshtein(query, n);
+      if (dist <= Math.max(2, Math.floor(n.length * 0.25)) && (!best || dist < best.score)) best = { tgt, score: dist };
+    }
+  }
+  return best?.tgt;
+}
+
 // ── Load / save ────────────────────────────────────────────────────────────
 
 // bun:sqlite statements are NOT auto-finalized. Creating a fresh one per call
@@ -1076,12 +1146,12 @@ export function saveGame(db: Database, g: Game) {
     // news
     const insN = stmt(
       db,
-      `INSERT INTO news (id, day, minutes, headline, body) VALUES (?, ?, ?, ?, ?)
+      `INSERT INTO news (id, day, minutes, headline, body, tag) VALUES (?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET day=excluded.day, minutes=excluded.minutes,
-         headline=excluded.headline, body=excluded.body`
+         headline=excluded.headline, body=excluded.body, tag=excluded.tag`
     );
     for (const n of g.news) {
-      insN.run(n.id, n.day, n.minutes, n.headline, n.body);
+      insN.run(n.id, n.day, n.minutes, n.headline, n.body, n.tag || "");
     }
     deleteMissingIds(db, "news", g.news.map((n) => n.id));
     // jobs
@@ -1131,9 +1201,9 @@ export function logEvent(g: Game, text: string) {
   if (g.logs.length > 500) g.logs.shift();
 }
 
-export function addNews(g: Game, headline: string, body = "") {
+export function addNews(g: Game, headline: string, body = "", tag = "") {
   const id = g.news.length ? g.news[g.news.length - 1].id + 1 : 1;
-  g.news.push({ id, day: g.day, minutes: g.minutes, headline, body });
+  g.news.push({ id, day: g.day, minutes: g.minutes, headline, body, tag });
   if (g.news.length > 60) g.news.shift();
 }
 
@@ -1280,7 +1350,7 @@ export function tick(g: Game, minutes: number, out: Line[]) {
   if (g.day > startDay || Math.random() < 0.25) {
     if (g.day > lastFillerDay + 1 || (g.day > lastFillerDay && Math.random() < 0.5)) {
       const f = NEWS_FILLERS[Math.floor(Math.random() * NEWS_FILLERS.length)];
-      addNews(g, pick(lang, f.headline), pick(lang, f.body));
+      addNews(g, pick(lang, f.headline), pick(lang, f.body), f.tag || "");
       g.flags.lastFillerDay = g.day;
     }
   }
@@ -1471,6 +1541,7 @@ export function resolveHack(
     (target?.basePayout ?? 30 * diff) *
     (0.7 + Math.random() * 0.6) *
     (isArcDone(g, "vault") ? 1.25 : 1) *
+    (isArcDone(g, "mira") ? 1.05 : 1) * // arc perk: Mira's Node
     prestigeMult(g) *
     styleMult(g) * // the drip pays for itself
     trophies.loot * // achievement perks
@@ -1726,6 +1797,7 @@ export interface State {
   laylow: number;
   pendingChoice: string;
   raidPending: boolean;
+  pendingHack: { target: string; event: string | null } | null;
   xp: number;
   level: number;
   morality: number;
@@ -1747,7 +1819,7 @@ export interface State {
   crew: { id: string; hiredDay: number }[];
   prestige: number;
   market: { tor: Record<string, number>; dossiers: Record<string, number>; scandalDay: number };
-  settings: { theme: string; fontsize: string; anim: boolean; sound: boolean; lang: string; wallpaper: string };
+  settings: { theme: string; fontsize: string; anim: boolean; sound: boolean; chips: boolean; lang: string; wallpaper: string };
   flags: Record<string, unknown>;
 }
 
@@ -1796,11 +1868,16 @@ export function snapshot(g: Game): State {
       headline: n.headline,
       body: n.body,
       when: fmtClock(n.day, n.minutes),
+      tag: n.tag || "",
     })),
     nullsec: !!g.flags.nullsecContacted,
     laylow: (g.flags.laylowUntil as number) || 0,
     pendingChoice: (g.flags.pendingChoice as string) || "",
     raidPending: !!g.flags.raidPending,
+    pendingHack: (() => {
+      const p = g.flags.pendingHack as { target?: string; event?: string | null } | null | undefined;
+      return p && typeof p === "object" && p.target ? { target: p.target, event: p.event ?? null } : null;
+    })(),
     xp: xpOf(g),
     level: levelOf(g),
     morality: moralityOf(g),
@@ -1868,6 +1945,7 @@ export function snapshot(g: Game): State {
       fontsize: (g.flags.fontsize as string) || "md",
       anim: g.flags.anim !== false && g.flags.anim !== "off",
       sound: g.flags.sound !== false && g.flags.sound !== "off",
+      chips: g.flags.chips !== false && g.flags.chips !== "off",
       lang: (g.flags.lang as Lang) || "en",
       wallpaper: (g.flags.wallpaper as string) || "matrix",
     },

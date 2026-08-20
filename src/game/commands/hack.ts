@@ -1,6 +1,6 @@
 import type { Command } from "./types";
 import { blank, dim, divider, err, info, money, ok, warn, fmtMoney } from "../output";
-import { findTarget, hackMinutes, parallelSlots, langOf, skillLevel, heatMult, resolveHack, logEvent } from "../engine";
+import { findTarget, fuzzyTarget, hackMinutes, parallelSlots, langOf, skillLevel, heatMult, resolveHack, logEvent } from "../engine";
 import type { Game } from "../engine";
 import { t } from "../i18n";
 
@@ -66,8 +66,14 @@ export const hackCmd: Command = {
     // ── vector choice ───────────────────────────────────────────────────────
     if (mode === "brute" || mode === "exploit" || mode === "social") {
       const tgtName = cleanName(rest.join(" ")) || (pending ? pending.target : "");
-      const tgt = findTarget(g, tgtName);
-      if (!tgt) return { lines: [err(t(lang, "hack.noTarget", { name: tgtName }))], minutes: 0 };
+      let tgt = findTarget(g, tgtName);
+      let noroFix: { bad: string; good: string } | undefined;
+      if (!tgt) {
+        const fz = fuzzyTarget(g, tgtName);
+        if (!fz) return { lines: [err(t(lang, "hack.noTarget", { name: tgtName }))], minutes: 0 };
+        tgt = fz;
+        noroFix = { bad: tgtName, good: fz.name };
+      }
       if (pending && pending.target !== tgt.name) {
         return {
           lines: [err(t(lang, "hack.alreadyPending", { t: pending.target, v: "brute | exploit | social" }))],
@@ -77,11 +83,20 @@ export const hackCmd: Command = {
       if (isLocked(g, tgt.name)) {
         return { lines: [err(t(lang, "hack.blocked", { t: tgt.name }))], minutes: 0 };
       }
-      return chooseVector(g, tgt.name, mode);
+      return chooseVector(g, tgt.name, mode, noroFix);
     }
 
     // ── starting a hack: recon ──────────────────────────────────────────────
-    const tgt = findTarget(g, cleanName(args.join(" ")));
+    const rawName = cleanName(args.join(" "));
+    let tgt = findTarget(g, rawName);
+    let noroFix: string | undefined;
+    if (!tgt) {
+      const fz = fuzzyTarget(g, rawName);
+      if (fz) {
+        tgt = fz;
+        noroFix = fz.name;
+      }
+    }
     if (!tgt) {
       if (pending) {
         return {
@@ -113,6 +128,7 @@ export const hackCmd: Command = {
 
     setPending(g, { target: tgt.name, vector: "brute", event: null, minutes: 5, heatFactor: 1, failChance: 0.2, exploitOwned: false });
     const lines = [
+      ...(noroFix ? [ok(t(lang, "hack.noroFix", { bad: rawName, good: noroFix }))] : []),
       divider(t(lang, "hack.recon", { t: tgt.name, os: OS[Math.floor(Math.random() * OS.length)], ports: PORTS[Math.floor(Math.random() * PORTS.length)] })),
       dim(`   ${tgt.flavor}`),
       dim(t(lang, "hack.diff", { d: tgt.difficulty, m: hackMinutes(g, tgt.difficulty, tgt.skill) })),
@@ -129,7 +145,7 @@ export const hackCmd: Command = {
 };
 
 /** The player picked a vector: roll the dice, maybe trip an event. */
-function chooseVector(g: Game, tgtName: string, mode: "brute" | "exploit" | "social") {
+function chooseVector(g: Game, tgtName: string, mode: "brute" | "exploit" | "social", noroFix?: { bad: string; good: string }) {
   const lang = langOf(g);
   const tgt = findTarget(g, tgtName)!;
   const exploitOwned = g.exploits.includes(tgt.skill || "sql");
@@ -157,7 +173,7 @@ function chooseVector(g: Game, tgtName: string, mode: "brute" | "exploit" | "soc
   // 55% chance something trips on the way in
   const roll = Math.random();
   let event: PendingHack["event"] = null;
-  const lines = [ok(t(lang, "hack.vectorChosen", { v: vectorName }))];
+  const lines = [...(noroFix ? [ok(t(lang, "hack.noroFix", { bad: noroFix.bad, good: noroFix.good }))] : []), ok(t(lang, "hack.vectorChosen", { v: vectorName }))];
   if (roll < 0.55) {
     const ev = Math.random();
     if (ev < 0.35) event = "firewall";
