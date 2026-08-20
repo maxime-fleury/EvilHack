@@ -964,6 +964,8 @@ export function loadGame(db: Database): Game {
   if (!g.flags.market) {
     g.flags.market = { tor: { sniffer: 1, proxychain: 1, miner2: 1, wardialer: 1, rootkit: 1 }, dossiers: {}, scandalDay: 0 };
   }
+  // identified saves with an empty feed get the morning papers (in their language)
+  if (isIdentified(g)) seedMorningNews(g);
   return g;
 }
 
@@ -1205,6 +1207,33 @@ export function addNews(g: Game, headline: string, body = "", tag = "") {
   const id = g.news.length ? g.news[g.news.length - 1].id + 1 : 1;
   g.news.push({ id, day: g.day, minutes: g.minutes, headline, body, tag });
   if (g.news.length > 60) g.news.shift();
+}
+
+/**
+ * Seed the "morning papers" — a few filler stories spread over the past few
+ * hours, in the player's current language, so the feed is never empty.
+ * Idempotent: does nothing once the feed already has news.
+ */
+export function seedMorningNews(g: Game) {
+  if (g.news.length > 0) return;
+  const lang = langOf(g);
+  const used = new Set<string>();
+  const offsets = [100, 170, 240]; // minutes before "now"
+  for (const off of offsets) {
+    let f = NEWS_FILLERS[Math.floor(Math.random() * NEWS_FILLERS.length)];
+    for (let i = 0; i < 5 && used.has(f.headline.en); i++) {
+      f = NEWS_FILLERS[Math.floor(Math.random() * NEWS_FILLERS.length)];
+    }
+    used.add(f.headline.en);
+    let day = g.day;
+    let minutes = g.minutes - off;
+    while (minutes < 0) {
+      day = Math.max(1, day - 1);
+      minutes += 24 * 60;
+    }
+    const id = g.news.length ? g.news[g.news.length - 1].id + 1 : 1;
+    g.news.push({ id, day, minutes, headline: pick(lang, f.headline), body: pick(lang, f.body), tag: f.tag || "" });
+  }
 }
 
 export function addContact(g: Game, npcId: string): boolean {
@@ -1706,6 +1735,7 @@ export function dispatch(g: Game, raw: string): CmdResult {
     }
     g.name = clean;
     g.flags.identified = true;
+    seedMorningNews(g);
     const lines: Line[] = [
       ok(t(lang, "login.welcome", { name: clean })),
       dim(t(lang, "login.accepted", { name: clean })),

@@ -1,7 +1,7 @@
 import type { Command } from "./types";
 import { blank, dim, divider, info, ok } from "../output";
 import { fmtClock } from "../output";
-import { langOf, addNews } from "../engine";
+import { langOf, addNews, seedMorningNews } from "../engine";
 import type { Game } from "../engine";
 import { t } from "../i18n";
 
@@ -137,8 +137,12 @@ export const newsCmd: Command = {
     lines.push(divider(t(lang, "news.title")));
 
     if (!g.news.length) {
-      lines.push(dim(t(lang, "news.nothing")));
-      return { lines, minutes: 3 };
+      // never show an empty paper — generate the morning batch in the current language
+      seedMorningNews(g);
+      if (!g.news.length) {
+        lines.push(dim(t(lang, "news.nothing")));
+        return { lines, minutes: 3 };
+      }
     }
 
     // ── the world reacting to YOU (deduped: a headline appears only once) ──
